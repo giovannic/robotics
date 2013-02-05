@@ -1,21 +1,24 @@
+#pragma config(Sensor, S1,     leftBumper,          sensorTouch)
+#pragma config(Sensor, S2,     rightBumper,         sensorTouch)
+#pragma config(Sensor, S3,     leftLight,           sensorLightInactive)
+#pragma config(Sensor, S4,     rightLight,          sensorLightInactive)
 
 #include "towards_light.h"
 //left is A, right is B
 
 const float bright_light = 30;
-int lightState = 0;
+const float centre_threshold = 20;
+int lightState = -1;
 
 /*
 task main()
 {
-  StartTask(towards_light);
   while(true){}
 }
 */
 
 task towards_light()
 {
-  StartTask(seek);
   while (true)
   {
 
@@ -39,7 +42,9 @@ void newLightTask(int newT)
 {
   if (lightState != newT)
   {
-    stopCurrentLightTask(lightState);
+    if (lightState != -1)
+      stopCurrentLightTask(lightState);
+
     lightState = newT;
 	  switch(newT){
     case 1:
@@ -79,9 +84,9 @@ task approach_light()
 	  float left = SensorValue(leftLight);
 	  float right = SensorValue(rightLight);
 	  float leftness = left - right;
-	  float powerConstant = 1;
+	  float powerConstant = 2;
 	  nSyncedMotors = synchAB;
 	  nSyncedTurnRatio = -100;
-	  motor[motorA] = -powerConstant*leftness;
+	  motor[motorA] = -powerConstant*leftness + ((leftness < 0) ? 10 : -10);
 	}
 }

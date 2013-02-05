@@ -1,10 +1,14 @@
-#include "sensors.h"
+#pragma config(Sensor, S1,     leftBumper,          sensorTouch)
+#pragma config(Sensor, S2,     rightBumper,         sensorTouch)
+#pragma config(Sensor, S3,     leftLight,           sensorLightInactive)
+#pragma config(Sensor, S4,     rightLight,          sensorLightInactive)
 
 #include "course.h"
 #include "towards_light.c"
 #include "obstacles.c"
 //left is A, right is B
-int courseState = 0;
+int courseState = -1;
+
 
 task main()
 {
@@ -14,8 +18,6 @@ task main()
 
 task course()
 {
-  //first task
-  StartTask(towards_light);
   while (true)
   {
 
@@ -40,7 +42,10 @@ void newCourseTask(int newT)
 {
   if (courseState != newT)
   {
-    stopCurrentCourseTask(courseState);
+    if (evading) {return;}
+    //if (courseState != -1)
+      stopCurrentCourseTask(courseState);
+
     courseState = newT;
 	  switch(newT){
     case 1:
@@ -58,21 +63,24 @@ void stopCurrentCourseTask(int oldT)
   switch(oldT){
     case 1:
       StopTask(avoid_obstacles);
+      stopCurrentObstacleTask(obstacleState);
+      obstacleState = -1;
       break;
     case 0:
       StopTask(towards_light);
+      stopCurrentLightTask(lightState);
+      lightState = -1;
       break;
   }
 }
 
 bool centred()
 {
-	return (abs(
-	  SensorValue(leftLight) - SensorValue(rightLight)
-	  ) < 7.5);
+	return (abs(SensorValue(leftLight) - SensorValue(rightLight)) < centre_threshold) && (SensorValue(leftLight) > bright_light);
 }
 
 bool bumping()
 {
-  return (SensorValue(leftBumper) || SensorValue(rightBumper));
+
+  return ((SensorValue(leftBumper) == 1) || (SensorValue(rightBumper)) == 1);
 }
