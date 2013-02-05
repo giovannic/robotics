@@ -6,7 +6,7 @@
 #include "towards_light.h"
 //left is A, right is B
 
-const float bright_light = 25;
+const float bright_light = 30;
 int currentState = 0;
 
 task main()
@@ -76,11 +76,14 @@ task seek()
 
 task approach_light()
 {
-  float left = SensorValue(leftLight);
-  float right = SensorValue(rightLight);
-  float leftness = left - right;
-  float powerConstant = 2;
-  nSyncedMotors = synchAB;
-  nSyncedTurnRatio = -100;
-  motor[motorA] = -powerConstant*leftness;
+  while(true)
+  {
+	  float left = SensorValue(leftLight);
+	  float right = SensorValue(rightLight);
+	  float leftness = left - right;
+	  float powerConstant = 1;
+	  nSyncedMotors = synchAB;
+	  nSyncedTurnRatio = -100;
+	  motor[motorA] = -powerConstant*leftness;
+	}
 }
