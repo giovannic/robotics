@@ -4,7 +4,7 @@
 task towards_light();
 task seek();
 task approach_light();
-void stopCurrentTask(int oldT);
-void newTask(int newT);
+void stopCurrentLightTask(int oldT);
+void newLightTask(int newT);
 
 #endif

@@ -4,6 +4,6 @@
 task avoid_obstacles();
 task reverseCorner();
 task moveForward();
-void stopCurrentTask(int t);
+void stopCurrentObstacleTask(int t);
 
 #endif
