@@ -1,8 +1,17 @@
 // Some suitable data structures for particle filter
 // Andrew Davison 2008-2012
 
+#include "squareDrawing.c"
+#include "sample.h"
+//#include "particles.h"
+
 const int NUMBER_OF_PARTICLES = 100;
 const int NUMBER_OF_WALLS = 8;
+
+const float ENC_P_CM = 21.157;
+const int OFFSET = 10;
+
+float e,f = 0;
 
 // Arrays for storing information about particles
 float xArray[NUMBER_OF_PARTICLES];
@@ -30,26 +39,37 @@ float wallByArray[NUMBER_OF_WALLS] = {168, 168, 210, 210,  84,  84,   0,   0};
 
 
 // Number of cm per pixel in display
-const float DISPLAY_SCALE = 3.0;
+const float DISPLAY_SCALE = 1.0;
 
 void drawMap()
 {
 	// Display the map
-	for (int j = 0; j < NUMBER_OF_WALLS; j++) 
+	for (int j = 0; j < NUMBER_OF_WALLS; j++)
 	{
 		nxtDrawLine((int)(wallAxArray[j]/DISPLAY_SCALE), (int)(wallAyArray[j]/DISPLAY_SCALE),
 			(int)(wallBxArray[j]/DISPLAY_SCALE), (int)(wallByArray[j]/DISPLAY_SCALE));
 	}
 }
 
+void drawPosition(float x, float y)
+{
+	// Draw new position
+	nxtSetPixel((int) (encoderToCm(x)/DISPLAY_SCALE) + OFFSET, (int) (encoderToCm(y)/DISPLAY_SCALE) + OFFSET);
+}
+
 void drawParticles()
 {
 	// Draw the particle set
-	for (int i = 0; i < NUMBER_OF_PARTICLES; i++) 
+	for (int i = 0; i < NUMBER_OF_PARTICLES; i++)
 	{
-		nxtSetPixel((int)(xArray[i]/DISPLAY_SCALE), (int)(yArray[i]/DISPLAY_SCALE));
+		drawPosition(xArray[i], yArray[i]);
 	}
 
+}
+
+float encoderToCm(float encoder)
+{
+	return encoder/ENC_P_CM;
 }
 
 void initParticleArrays()
@@ -62,30 +82,40 @@ void initParticleArrays()
 	}
 }
 
-void updateParticleArrays()
+void updateParticleArraysForward(float distanceMoved)
 {
 	for (int particle = 0; particle < NUMBER_OF_PARTICLES; particle++)
 	{
 		//float uniform_float = sampleUniform(1.0);
-		float gaussian = sampleGaussian(0.0, 1.0);
-		xArray[particle] = xArray[particle] + (<<DISTANCE>> + gaussian)*cos(thetaArray[particle]);
-		gaussian = sampleGaussian(0.0, 1.0);
-		yArray[particle] = yArray[particle] + (<<DISTANCE>> + gaussian)*sin(thetaArray[particle]);
+		e = sampleGaussian(0.0, 0.005);
+		f = sampleGaussian(0.0, 0.005);
+		xArray[particle] = xArray[particle] + (distanceMoved + e)*cos(thetaArray[particle]);
+		yArray[particle] = yArray[particle] + (distanceMoved + e)*sin(thetaArray[particle]);
+		thetaArray[particle] = thetaArray[particle] + f;
 	}
 }
 
+void updateParticleArraysRotate(float theta, float degTurned)
+{
+	for (int particle = 0; particle < NUMBER_OF_PARTICLES; particle++)
+	{
+		//float uniform_float = sampleUniform(1.0);
+		float g = sampleGaussian(0.0, 0.005);
+		thetaArray[particle] = thetaArray[particle] + (degTurned + g);
+	}
+}
 
 task main()
 {
 	eraseDisplay();
-	
+
 	initParticleArrays();
 
 	//drawMap();
-	
-	updateParticleArrays();
-	
-	drawParticles();
+
+	//drawParticles();
+
+	square();
 
 	wait1Msec(5000);
 
