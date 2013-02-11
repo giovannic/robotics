@@ -58,8 +58,22 @@ void initParticleArrays()
 	{
 		xArray[particle] = 0;
 		yArray[particle] = 0;
+		thetaArray[particle] = 0;
 	}
 }
+
+void updateParticleArrays()
+{
+	for (int particle = 0; particle < NUMBER_OF_PARTICLES; particle++)
+	{
+		//float uniform_float = sampleUniform(1.0);
+		float gaussian = sampleGaussian(0.0, 1.0);
+		xArray[particle] = xArray[particle] + (<<DISTANCE>> + gaussian)*cos(thetaArray[particle]);
+		gaussian = sampleGaussian(0.0, 1.0);
+		yArray[particle] = yArray[particle] + (<<DISTANCE>> + gaussian)*sin(thetaArray[particle]);
+	}
+}
+
 
 task main()
 {
@@ -69,7 +83,7 @@ task main()
 
 	//drawMap();
 	
-	//updateParticleArrays();
+	updateParticleArrays();
 	
 	drawParticles();
 
