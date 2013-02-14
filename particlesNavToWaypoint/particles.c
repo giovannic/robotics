@@ -90,7 +90,7 @@ void updateParticleArraysForward(float distanceMoved)
 	{
 		//float uniform_float = sampleUniform(1.0);
 		e = sampleGaussian(0.0, 0.005);
-		f = sampleGaussian(0.0, 0.005);
+		f = sampleGaussian(0.0, 0.008);
 		xArray[particle] = xArray[particle] + (distanceMoved + e)*cos(thetaArray[particle]);
 		yArray[particle] = yArray[particle] + (distanceMoved + e)*sin(thetaArray[particle]);
 		thetaArray[particle] = thetaArray[particle] + f;
