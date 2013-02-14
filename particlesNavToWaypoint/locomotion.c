@@ -65,12 +65,20 @@ void moveForward(float d)
 
 }
 
-//angle PI/2 <= a <= PI/2
 void turnNDegrees(float a)
 {
   nSyncedMotors = synchAB;
   nSyncedTurnRatio = -100;
   float rotStart = nMotorEncoder[motorA];
+  
+  while (a <= -PI){
+	a += 2*PI;
+  }
+	
+  while (a > PI){
+	a -= 2*PI;
+  }
+  
   if (a < 0){
     motor[motorA] = motorPower;
   }else{
