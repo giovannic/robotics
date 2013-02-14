@@ -6,24 +6,45 @@ int x = 0;
 int y = 0;
 float theta = 0;
 
-const int squareSize = 40;
-const int wheelMoveLimit = 847;
-const int wheelRotateLimit = 200;
-const int motorPower = 10;
-const float offset = 0.9999;
-const float scale = wheelMoveLimit/(squareSize+offset);
+float motorPower = 30;
+const float ENC_P_CM = 21.157;
 
-
-int orientation = 0;
-/*
-void drawPosition()
+//x and y in meters
+void navigateToWaypoint (float new_x, float new_y)
 {
-  nxtSetPixel((x )/scale +10,(y )/scale+10 );
+	new_x *= 100;
+	new_y *= 100;
+	float dx = new_x - x;
+	float dy = new_y - y;
+	float targetAngle = 0;
+	if (dy != 0)
+	{
+		targetAngle = atan( dx / dy );
+	} else {
+		targetAngle = PI/2;
+	}
+	//SW quadrant
+	if(dy < 0 && dx >= 0)
+	{
+		targetAngle += PI;
+	}
+	//NW
+	if (dy <= 0 && dx < 0)
+	{
+		targetAngle -= PI;
+	}
+
+	float newAngle = targetAngle - theta;
+	nxtDisplayCenteredTextLine(3, "NA: %f", newAngle);
+	nxtDisplayCenteredTextLine(4, "TA: %f", targetAngle);
+	wait1Msec(1000);
+	turnNDegrees(newAngle);
+
+	//moveForward(sqrt((dx*dx) + (dy*dy)));
 }
-*/
 
 // Functions that draw on the screen
-void forward40cmdraw()
+void moveForward(float d)
 {
   float lastMotorValue = 0;
   float distanceMoved = 0;
@@ -32,38 +53,55 @@ void forward40cmdraw()
   nSyncedTurnRatio = 100;
   float lineStart = nMotorEncoder[motorA];
   motor[motorA] = motorPower;
+  float  encoderLimit = ENC_P_CM*d;
 
-  while((nMotorEncoder[motorA] - lineStart) < wheelMoveLimit)
+  while((nMotorEncoder[motorA] - lineStart) < encoderLimit)
   {
-    currentDistance = nMotorEncoder[motorA] - lineStart;
-    distanceMoved = currentDistance - lastMotorValue;
-
-    x = x + distanceMoved * cos(theta);
-    y = y + distanceMoved * sin(theta);
-
-    drawPosition(x, y);
-    lastMotorValue = currentDistance;
-	updateParticleArraysForward(distanceMoved);
-	drawParticles();
   }
 
+  x = d * cos(theta);
+  y = d * sin(theta);
   motor[motorA] = 0;  // turn the motors off.
 
 }
-void left90dgdraw()
+
+//angle PI/2 <= a <= PI/2
+void turnNDegrees(float a)
 {
   nSyncedMotors = synchAB;
   nSyncedTurnRatio = -100;
   float rotStart = nMotorEncoder[motorA];
-  float degTurned = PI/2;
-
-  while((nMotorEncoder[motorA] - rotStart) > -wheelRotateLimit )
-  {
+  if (a < 0){
+    motor[motorA] = motorPower;
+  }else{
     motor[motorA] = -motorPower;
   }
+  float rotLimit = (400/PI) * a;
+
+  while(abs(nMotorEncoder[motorA] - rotStart) < abs(rotLimit) )
+  {
+  }
+
   motor[motorA] = 0;
   wait1Msec(1000);
+  theta += a;
+}
 
-  updateParticleArraysRotate(theta, degTurned);
-  theta = theta + degTurned;
+task main (){
+	navigateToWaypoint(0,2);
+	wait1Msec(100000);
+	navigateToWaypoint(1,1);
+	wait1Msec(100000);
+	navigateToWaypoint(1,0);
+	wait1Msec(100000);
+	navigateToWaypoint(1,-1);
+	wait1Msec(100000);
+	navigateToWaypoint(0,-1);
+	wait1Msec(100000);
+	navigateToWaypoint(-1,-1);
+	wait1Msec(100000);
+	navigateToWaypoint(-1,0);
+	wait1Msec(100000);
+	navigateToWaypoint(-1,1);
+	wait1Msec(100000);
 }
