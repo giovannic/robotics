@@ -24,9 +24,9 @@ float xArray[NUMBER_OF_PARTICLES];
 float yArray[NUMBER_OF_PARTICLES];
 float thetaArray[NUMBER_OF_PARTICLES];
 
-float xArrayCopy[NUMBER_OF_PARTICLES];
-float yArrayCopy[NUMBER_OF_PARTICLES];
-float thetaArrayCopy[NUMBER_OF_PARTICLES];
+//float xArrayCopy[NUMBER_OF_PARTICLES];
+//float yArrayCopy[NUMBER_OF_PARTICLES];
+//float thetaArrayCopy[NUMBER_OF_PARTICLES];
 
 float weightArray[NUMBER_OF_PARTICLES];
 
@@ -121,8 +121,8 @@ void updateParticleArraysForward(float distanceMoved)
 		//float uniform_float = sampleUniform(1.0);
 		e = sampleGaussian(0.0, 0.005);
 		f = sampleGaussian(0.0, 0.008);
-		xArray[particle] = xArray[particle] + (distanceMoved + e)*cos(thetaArray[particle]);
-		yArray[particle] = yArray[particle] + (distanceMoved + e)*sin(thetaArray[particle]);
+		xArray[particle] = xArray[particle] + (distanceMoved + e)*sin(thetaArray[particle]);
+		yArray[particle] = yArray[particle] + (distanceMoved + e)*cos(thetaArray[particle]);
 		thetaArray[particle] = thetaArray[particle] + f;
 	}
 }
@@ -260,10 +260,15 @@ void resample()
 	float randomSelected;
 	int currentIndex;
 
-	copyParticleData();
+	//copyParticleData();
 
+	float newX[NUMBER_OF_PARTICLES];
+	float newY[NUMBER_OF_PARTICLES];
+	float newTheta[NUMBER_OF_PARTICLES];
 
 	//
+
+	/*
 	for (int i = 0; i < NUMBER_OF_PARTICLES; ++i)
 	{
 	  // creates an accurate random value between 0 and 1
@@ -276,11 +281,47 @@ void resample()
 			++currentIndex;
 		}
 		--currentIndex;
-		copyParticle(currentIndex, i);
+		newX[i] = xArray[currentIndex];
+		newY[i] = yArray[currentIndex];
+		newTheta[i] = thetaArray[currentIndex];
+		//copyParticle(currentIndex, i);
 	}
+	*/
+
+
+
+	float total = 0;
+
+	// for each to fill the new array
+	for (int i = 0; i < NUMBER_OF_PARTICLES; ++i)
+	{
+	    // creates an accurate random value between 0 and 1
+	    unsigned int negposRng = 0;
+	    negposRng = rand();//%65536;
+	    randomSelected = (float)(negposRng) / 65536.0;
+		  //randomSelected = ((float)random(1000))/1000.0;
+	    currentIndex = 0;
+	    total = 0;
+
+	    while(randomSelected >= total)
+	    {
+	        total = total + weightArray[currentIndex];
+	        currentIndex++;
+	    }
+
+	    currentIndex = (currentIndex == 0) ? 1 : currentIndex;
+
+	    newX[i] = xArray[currentIndex-1];
+		  newY[i] = yArray[currentIndex-1];
+		  newTheta[i] = thetaArray[currentIndex-1];
+	}
+
+	xArray = newX;
+	yArray = newY;
+	thetaArray = newTheta;
 }
 
-void copyParticleData()
+/*void copyParticleData()
 {
 	for (int i = 0; i < NUMBER_OF_PARTICLES; ++i)
 	{
@@ -296,7 +337,7 @@ void copyParticle(int from, int to)
 	xArray[to] = xArrayCopy[from];
 	yArray[to] = yArrayCopy[from];
 	thetaArray[to] = thetaArrayCopy[from];
-}
+}*/
 
 //x and y in meters
 void navigateToWaypoint (float new_x, float new_y)
@@ -322,7 +363,7 @@ void navigateToWaypoint (float new_x, float new_y)
 		  moved = step < distanceToMove ? step : distanceToMove;
 		  moveForward(moved);
 
-		  distanceToMove = distanceToMove - moved;
+		  //distanceToMove = distanceToMove - moved;
 	}
 
 }
@@ -459,6 +500,8 @@ void scan()
 task main (){
 	init(); //initialises everything
 
+	//turnNDegrees(0.34);
+  moveForward(89);
 	//draw();
 
 	//scan 360 degrees
