@@ -95,6 +95,13 @@ float encoderToCm(float encoder)
 	return encoder/ENC_P_CM;
 }
 
+void initWeightArray()
+{
+	for (int particle = 0; particle < NUMBER_OF_PARTICLES; particle++)
+	{
+		weightArray[particle] = (float) 1/NUMBER_OF_PARTICLES;
+	}
+}
 
 void initParticleArrays()
 {
@@ -274,7 +281,8 @@ void resample()
 	  // creates an accurate random value between 0 and 1
 		randomSelected = random(1000)/1000.0;
 		currentIndex = 0;
-		while (randomSelected > 0)
+		while (randomSelected > 0 &&
+		        currentIndex < NUMBER_OF_PARTICLES)
 		{
 			randomSelected -= weightArray[currentIndex];
 			++currentIndex;
@@ -309,12 +317,12 @@ void navigateToWaypoint (float new_x, float new_y)
 	new_y *= 100;
 	float dx = new_x - x;
 	float dy = new_y - y;
-	
+
 	float newAngle = calculateAngle(dx, dy);
 	float distanceToMove = calculateDistance(dx, dy);
 	float step = 2;
 	float moved = 2;
-	
+
 	while (distanceToMove > 0)
 	{
 		dx = new_x - x;
@@ -322,13 +330,13 @@ void navigateToWaypoint (float new_x, float new_y)
 		newAngle = calculateAngle(dx, dy);
 		distanceToMove = calculateDistance(dx, dy);
 		turnNDegrees(newAngle);
-		
+
 		moved = step < distanceToMove ? step : distanceToMove;
 		moveForward(moved);
-		
+
 		distanceToMove -= moved;
 	}
-	
+
 }
 
 float calculateAngle(float dx, float dy)
@@ -361,15 +369,13 @@ float calculateAngle(float dx, float dy)
 
 float calculateDistance(float dx, float dy)
 {
-	return sqrt((dx*dx) + (dy*dy))
+	return sqrt((dx*dx) + (dy*dy));
 }
 
 //d in cm
 void moveForward(float d)
 {
-  float lastMotorValue = 0;
-  float distanceMoved = 0;
-  float currentDistance = 0;
+
   nSyncedMotors = synchAB;
   nSyncedTurnRatio = 100;
   float lineStart = nMotorEncoder[motorA];
@@ -379,7 +385,7 @@ void moveForward(float d)
   while((nMotorEncoder[motorA] - lineStart) < encoderLimit)
   {
   }
-  
+
   updateParticleArraysForward(d);
   update_weight_array();
   normalise();
@@ -388,7 +394,7 @@ void moveForward(float d)
   theta = findAverageTheta();
   x = findAverageX();
   y = findAverageY();
-  
+
   motor[motorA] = 0;  // turn the motors off.
 
 }
@@ -441,38 +447,40 @@ void update_weight_array()
 void init()
 {
 	initParticleArrays();
+	initWeightArray();
+	theta = findAverageTheta();
+	x = findAverageX();
+	y = findAverageY();
 }
 
 void draw()
 {
 	drawMap();
-	drawPosition();
+	drawPosition(x, y);
 	drawParticles();
 }
 
 void scan()
 {
-	for (float i = -PI; i < PI; i += PI/4)
+	for (float i = 0; i < 8; i++)
 	{
-		turnNDegrees(i);
+		turnNDegrees(PI/4);
 	}
 }
 
 task main (){
 	init(); //initialises everything
-	
+
 	draw();
-	
+
 	//scan 360 degrees
 	scan();
-	
-	void navigateToWaypoint (84, 30);
-	void navigateToWaypoint (180, 30);
-	void navigateToWaypoint (180, 54);
+
+	navigateToWaypoint (84, 30);
+	navigateToWaypoint (180, 30);
+	navigateToWaypoint (180, 54);
 	/*
-	void navigateToWaypoint (84, 30);
-	void navigateToWaypoint (84, 30);
-	void navigateToWaypoint (84, 30);
+	navigateToWaypoint (180, 54);
 	*/
 
 }
