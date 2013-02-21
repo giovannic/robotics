@@ -1,6 +1,6 @@
 #include "particles.h"
 
-const int NUMBER_OF_PARTICLES = 100;
+const int NUMBER_OF_PARTICLES = 96;
 const int NUMBER_OF_WALLS = 8;
 
 const float ENC_P_CM = 21.157;
@@ -73,16 +73,36 @@ float encoderToCm(float encoder)
 	return encoder/ENC_P_CM;
 }
 
+
 void initParticleArrays()
 {
-	for (int particle = 0; particle < NUMBER_OF_PARTICLES; particle++)
-	{
-		xArray[particle] = 0;
-		yArray[particle] = 0;
-		thetaArray[particle] = 0;
-	}
-}
+  int particles = 0;
+  //create particles for 168*168 square
+  for(int x = 1; x < 168; x += 20)
+    for(int y = 1; y < 168; y+= 22)
+    {
+      xArray[particles] = x;
+      yArray[particles] = y;
+      thetaArray[particles++] = random(31415)/10000 - PI/2;
+    }
 
+  //create particles in top sqaure
+  for(int x = 85; x < 168; x += 25)
+   for(int y = 169; y < 210; y += 15)
+   {
+      xArray[particles] = x;
+      yArray[particles] = y;
+      thetaArray[particles++] = random(31415)/10000 - PI/2;
+   }
+  //create particles in right sqaure
+  for(int x = 169; x < 210; x += 14)
+   for(int y = 1; y < 84; y += 25)
+   {
+      xArray[particles] = x;
+      yArray[particles] = y;
+      thetaArray[particles++] = random(31415)/10000 - PI/2;
+   }
+}
 void updateParticleArraysForward(float distanceMoved)
 {
 	for (int particle = 0; particle < NUMBER_OF_PARTICLES; particle++)
