@@ -36,6 +36,6 @@ float calculate_likelihood(float x, float y, float theta, float z)
 		}
 
    }
-
+   
    	  return sample_gaussian(z, minimum, 1, 1);
 }
