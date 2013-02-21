@@ -14,7 +14,7 @@ void updateParticleArraysRotate(float degTurned);
 float findAverageX();
 float findAverageY();
 float findAverageTheta();
-float calculate_likelihood(float x, float y, float theta, float z);
+float calculate_likelihood(float locx, float locy, float theta, float z);
 float sample_gaussian(float mean, float x, float k, float sigma);
 int between(float middle, float start, float finish);
 void normalise();

@@ -5,7 +5,7 @@
 
 #include "particles.h"
 
-const int NUMBER_OF_PARTICLES = 96;
+const int NUMBER_OF_PARTICLES = 100;
 
 int x = 0;
 int y = 0;
@@ -53,7 +53,8 @@ float wallByArray[NUMBER_OF_WALLS] = {168, 168, 210, 210,  84,  84,   0,   0};
 // Number of cm per pixel in display
 const float DISPLAY_SCALE = 1.0;
 
-float pow(float a, int b) {
+float pow(float a, int b)
+{
     if (b<=0) return 0; // we want a positive integer for the exponent
     else {
         float c=1;
@@ -105,31 +106,11 @@ void initWeightArray()
 
 void initParticleArrays()
 {
-  int particles = 0;
-  //create particles for 168*168 square
-  for(int x = 1; x < 168; x += 20)
-    for(int y = 1; y < 168; y+= 22)
-    {
-      xArray[particles] = x;
-      yArray[particles] = y;
-      thetaArray[particles++] = random(31415)/10000 - PI/2;
-    }
-
-  //create particles in top sqaure
-  for(int x = 85; x < 168; x += 25)
-   for(int y = 169; y < 210; y += 15)
+   for (int i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
-      xArray[particles] = x;
-      yArray[particles] = y;
-      thetaArray[particles++] = random(31415)/10000 - PI/2;
-   }
-  //create particles in right sqaure
-  for(int x = 169; x < 210; x += 14)
-   for(int y = 1; y < 84; y += 25)
-   {
-      xArray[particles] = x;
-      yArray[particles] = y;
-      thetaArray[particles++] = random(31415)/10000 - PI/2;
+      xArray[i] = 0;
+      yArray[i] = 0;
+      thetaArray[i] = 0;
    }
 }
 
@@ -163,9 +144,9 @@ float findAverageX()
   int i = 0;
    for ( i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
-     total += xArray[i];
+     total += xArray[i] * weightArray[i];
    }
-   return (total / NUMBER_OF_PARTICLES);
+   return total;
 }
 
 float findAverageY()
@@ -174,9 +155,9 @@ float findAverageY()
   int i = 0;
    for ( i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
-     total += yArray[i];
+     total += yArray[i] * weightArray[i];
    }
-   return (total / NUMBER_OF_PARTICLES);
+   return total;
 }
 
 float findAverageTheta()
@@ -185,14 +166,14 @@ float findAverageTheta()
   int i = 0;
    for ( i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
-     total += thetaArray[i];
+     total += thetaArray[i]  * weightArray[i];
    }
-   return (total / NUMBER_OF_PARTICLES);
+   return total;
 
 }
 
 // x,y,theta for a specific particle. z is the sonar reading.
-float calculate_likelihood(float x, float y, float theta, float z)
+float calculate_likelihood(float locx, float locy, float theta, float z)
 {
   //sentinel minimum and wall values
   //minimum = closest wall so far.
@@ -200,27 +181,34 @@ float calculate_likelihood(float x, float y, float theta, float z)
   float By = 0, Bx = 0, Ax = 0, Ay = 0, m = 0, minimum = -1; //wall = -1;
   float dx = 0, dy = 0, numerator = 0, denominator = 0, interX = 0, interY = 0;
 
-   for (int i = 0; i < NUMBER_OF_WALLS; ++i)
+   for (int wallIterator = 0; wallIterator < NUMBER_OF_WALLS; ++wallIterator)
    {
-      Ax = wallAxArray[i];
-      Ay = wallAyArray[i];
-      Bx = wallBxArray[i];
-      By = wallByArray[i];
+      Ax = wallAxArray[wallIterator];
+      Ay = wallAyArray[wallIterator];
+      Bx = wallBxArray[wallIterator];
+      By = wallByArray[wallIterator];
 
 	    dx = Bx - Ax;
 	    dy = By - Ay;
 
 	    //calculate m
-	    numerator = dy*(Ax-x) - dx*(Ay-y);
+	    numerator = dy*(Ax-locx) - dx*(Ay-locy);
+	    float thetaformatt = theta;
+	    float cosval = cos(theta);
+	    float sinval = sin(theta);
+	    float sinvaldx = dx*sin(theta);
+	    float cosvaldy = dy*cos(theta);
 	    denominator = dy*cos(theta) - dx*sin(theta);
+
+
       m = numerator/denominator;
 
 		  if ((m > 0) && (minimum > m || minimum == -1))
 		  {
 			  //check bound
 			  //round or truncate?
-			  interX = (int) (x + m*cos(theta));
-			  interY = (int) (y + m*sin(theta));
+			  interX =  (float)(locx + m*cos(theta));
+			  interY =  (float)(locy + m*sin(theta));
 			  if (between(interX, Ax, Bx) && between(interY, Ay, By))
 			  {
 				  minimum = m;
@@ -243,9 +231,9 @@ float sample_gaussian(float mean, float x, float k, float sigma)
 int between(float middle, float start, float finish)
 {
 	//round for comparisons
-	int mid = (int) middle + 0.5;
-	int sta = (int) start + 0.5;
-	int fin = (int) finish + 0.5;
+	float mid = (float)middle + 0.5;
+	float sta = (float)start + 0.5;
+	float fin = (float)finish + 0.5;
 
 	//check that middle is between start and finish
 	//even if start > finish
@@ -313,28 +301,28 @@ void copyParticle(int from, int to)
 //x and y in meters
 void navigateToWaypoint (float new_x, float new_y)
 {
-	new_x *= 100;
-	new_y *= 100;
+	//new_x *= 100;
+	//new_y *= 100;
 	float dx = new_x - x;
 	float dy = new_y - y;
 
 	float newAngle = calculateAngle(dx, dy);
 	float distanceToMove = calculateDistance(dx, dy);
-	float step = 2;
-	float moved = 2;
+	float step = 20;
+	float moved = 0;
 
 	while (distanceToMove > 0)
 	{
-		dx = new_x - x;
-		dy = new_y - y;
-		newAngle = calculateAngle(dx, dy);
-		distanceToMove = calculateDistance(dx, dy);
-		turnNDegrees(newAngle);
+		  dx = new_x - x;
+		  dy = new_y - y;
+		  newAngle = calculateAngle(dx, dy);
+		  distanceToMove = calculateDistance(dx, dy);
+		  turnNDegrees(newAngle);
 
-		moved = step < distanceToMove ? step : distanceToMove;
-		moveForward(moved);
+		  moved = step < distanceToMove ? step : distanceToMove;
+		  moveForward(moved);
 
-		distanceToMove -= moved;
+		  distanceToMove = distanceToMove - moved;
 	}
 
 }
@@ -391,7 +379,7 @@ void moveForward(float d)
   normalise();
   resample();
 
-  theta = findAverageTheta();
+  //theta = findAverageTheta();
   x = findAverageX();
   y = findAverageY();
 
@@ -471,14 +459,26 @@ void scan()
 task main (){
 	init(); //initialises everything
 
-	draw();
+	//draw();
 
 	//scan 360 degrees
-	scan();
+	//scan();
 
+	//navigateToWaypoint (0, 0);
 	navigateToWaypoint (84, 30);
 	navigateToWaypoint (180, 30);
 	navigateToWaypoint (180, 54);
+	navigateToWaypoint (126, 54);
+	navigateToWaypoint (126, 168);
+	navigateToWaypoint (126, 126);
+	navigateToWaypoint (30, 54);
+	navigateToWaypoint (84, 54);
+	navigateToWaypoint (84, 30);
+
+
+	//navigateToWaypoint (84, 30);
+	//navigateToWaypoint (180, 30);
+	//navigateToWaypoint (180, 54);
 	/*
 	navigateToWaypoint (180, 54);
 	*/
