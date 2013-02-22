@@ -33,8 +33,8 @@ void initialise()
 {
     for (int i = 0; i < NUMBER_OF_PARTICLES; ++i)
     {
-        xArray[i] = 0;
-        yArray[i] = 0;
+        xArray[i] = 84;
+        yArray[i] = 30;
         thetaArray[i] = 0;
         weightArray[i] = 1.0/((float) NUMBER_OF_PARTICLES);
     }
@@ -63,12 +63,18 @@ void navigateToWaypoint(float xtarget, float ytarget)
         float tempWaypointY = y + (driveDistance * sin(angle));
 
         driveToWaypoint(tempWaypointX, tempWaypointY);
-        //monte carlo here *********
+        monteCarlo();
         wait1Msec(500);
 
     }
+
+    PlayTone(784, 15);
 }
 
+
+/***********************************************************************
+***********************************************************************
+*********************** Calculate Distance and Angle *******************/
 
 float calcDistance(float xtarget, float ytarget)
 {
@@ -111,6 +117,212 @@ float calcAngle(float xtarget, float ytarget)
 }
 
 
+/***********************************************************************
+***********************************************************************
+*********************** Monte Carlo Methods ***************************/
+
+
+void monteCarlo()
+{
+  //measurementUpdate();
+  //normalisation();
+  //resampling();
+
+}
+
+void measurementUpdate()
+{
+    float sonar = SensorValue(sonar_sensor) - 8; // allow for distance between sonar and centre of wheelbase
+    for (int i = 0; i < NUMBER_OF_PARTICLES; ++i)
+    {
+        int particlesX = xArray[i];
+        int particlesY = yArray[i];
+        int particlesTheta = thetaArray[i];
+        weightArray[i] = weightArray[i] * calculateLiklihood(particlesX, particlesY, particlesTheta, sonar);
+    }
+}
+
+
+
+
+/***********************************************************************
+************************ Likelihood Calculating *************************/
+
+float scaleForAngle(float sample, float angle)
+{
+	if (angle == 0)
+	{
+		angle = 1;
+	}
+
+	return (sample * 1.0/angle);
+}
+
+float getGaussianValue(float m, float z)
+{
+	float sigma = 1;
+	float constant = 0.1;
+
+	float numerator = - ((z-m) * (z-m));
+	float denominator = 2 * (sigma * sigma);
+	float power = numerator/denominator;
+
+	return (exp(power) + constant);
+}
+
+int between(float middle, float start, float finish)
+{
+	float mid = middle + 0.5;
+	float sta = start + 0.5;
+	float fin = finish + 0.5;
+
+	return ( mid >= sta && mid <= fin) || (mid >= fin && mid <= sta);
+}
+
+int getClosestWallForward(float x, float y, float theta)
+{
+	float closestDistance = -1;
+	int closestWall = 0;
+
+	for(int i = 0 ; i < NUMBER_OF_WALLS ; i++)
+	{
+		float ax = wallAxArray[i];
+		float bx = wallBxArray[i];
+		float ay = wallAyArray[i];
+		float by = wallByArray[i];
+
+		float dx = bx - ax;
+		float dy = by - ay;
+
+		float numerator = dy*(ax-x) - dx*(ay-y);
+		float denominator = dy*cos(theta) - dx*sin(theta);
+		float distance = numerator/denominator;
+
+		float interX = (x + distance*sin(theta));   // CHECK THIS!!!!!!!!!!!
+		float interY = (y + distance*cos(theta));
+
+		int collide = between(interX, ax, bx) && between(interY, ay, by);
+
+		if(distance >= 0 && (closestDistance == -1 || distance < closestDistance) && collide )
+		{
+			closestDistance = distance;
+			closestWall = i;
+		}
+	}
+
+	return closestWall;
+}
+
+int getClosestWallForwardDistance(float x, float y, float theta, int wall)
+{
+
+	float ax = wallAxArray[wall];
+	float bx = wallBxArray[wall];
+	float ay = wallAyArray[wall];
+	float by = wallByArray[wall];
+
+	float dx = bx - ax;
+	float dy = by - ay;
+
+	float numerator = dy*(ax-x) - dx*(ay-y);
+	float denominator = dy*cos(theta) - dx*sin(theta);
+	float distance = numerator/denominator;
+
+	return distance;
+}
+
+// Calculate the angle to the wall.
+float angleToWall(float theta, int wall)
+{
+	float ax = wallAxArray[wall];
+	float bx = wallBxArray[wall];
+	float ay = wallAyArray[wall];
+	float by = wallByArray[wall];
+
+	float dx = bx - ax;
+	float dy = ay - by;
+
+	float numerator = dy*cos(theta) + dx*sin(theta);
+	float denominator = sqrt((dy*dy) + (dx*dx));
+	float fraction = numerator/denominator;
+
+	return  abs(acos(fraction));
+}
+
+float calculateLiklihood(float x, float y, float theta, float z)
+{
+  int wall = getClosestWallForward(x,y,theta);
+	float expectedDepth = getClosestWallForwardDistance(x,y,theta,wall);
+	float sample = getGaussianValue(expectedDepth,z);
+	float angle = angleToWall(theta,wall);
+	float result = scaleForAngle(sample,angle);
+	return result;
+}
+
+
+
+/************************************************************************/
+
+void normalisation()
+{
+  float weightTotal = 0;
+	for (int i = 0; i < NUMBER_OF_PARTICLES; ++i)
+	{
+		weightTotal += weightArray[i];
+	}
+
+	for (int j = 0; j < NUMBER_OF_PARTICLES; ++j)
+	{
+		weightArray[j] = weightArray[j] / weightTotal;
+	}
+}
+
+void resampling()
+{
+  float newX[NUMBER_OF_PARTICLES];
+	float newY[NUMBER_OF_PARTICLES];
+	float newTheta[NUMBER_OF_PARTICLES];
+
+	for (int i = 0; i < NUMBER_OF_PARTICLES; ++i)
+	{
+	    int newIndex = getRandomParticleIndex();
+	    newX[i] = xArray[newIndex];
+	    newY[i] = yArray[newIndex];
+	    newTheta[i] = thetaArray[newIndex];
+
+	}
+
+	xArray = newX;
+	yArray = newY;
+	thetaArray = newTheta;
+
+	for (int j = 0; j < NUMBER_OF_PARTICLES; ++j )
+	{
+	    weightArray[j] = 1.0/ (float)NUMBER_OF_PARTICLES;
+	}
+}
+
+int getRandomParticleIndex()
+{
+    float randomFloat = 0;
+    float cumulativeWeight = 0;
+    int currentIndex = 0;
+    int negposRng = 0;
+
+    while (randomFloat == 0)
+    {
+      negposRng = rand();//%65536;
+	    randomFloat = (float)(negposRng) / 65536.0;    // CHECK THIS
+	  }
+
+	  while (cumulativeWeight < randomFloat)
+	  {
+	      cumulativeWeight = cumulativeWeight + weightArray[currentIndex];
+	      ++currentIndex;
+	  }
+
+	  return currentIndex-1;
+}
 
 /***********************************************************************
 ***********************************************************************
@@ -124,8 +336,10 @@ void updateParticleArraysForward(float distanceMoved)
 	for (int particle = 0; particle < NUMBER_OF_PARTICLES; particle++)
 	{
 
-		e = sampleGaussian(0.0, 0.005);
-		f = sampleGaussian(0.0, 0.008);
+		//e = sampleGaussian(0.0, 0.005);
+	  e = sampleGaussian(0.0, 1);
+		//f = sampleGaussian(0.0, 0.008);
+	  f = sampleGaussian(0.0, 0.1);
 
 		xArray[particle] = xArray[particle] + (distanceMoved + e)*sin(thetaArray[particle]);
 		yArray[particle] = yArray[particle] + (distanceMoved + e)*cos(thetaArray[particle]);
@@ -280,7 +494,7 @@ task main ()
 {
     initialise();
 
-    navigateToWaypoint (84, 30);
+    //navigateToWaypoint (84, 30);
     navigateToWaypoint (180, 30);
 	  navigateToWaypoint (180, 54);
 	  navigateToWaypoint (126, 54);
