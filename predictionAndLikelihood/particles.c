@@ -53,7 +53,7 @@ float wallByArray[NUMBER_OF_WALLS] = {168, 168, 210, 210,  84,  84,   0,   0};
 // Number of cm per pixel in display
 const float DISPLAY_SCALE = 1.0;
 
-float pow(float a, int b)
+/*float pow(float a, int b)
 {
     if (b<=0) return 0; // we want a positive integer for the exponent
     else {
@@ -64,7 +64,7 @@ float pow(float a, int b)
         return c;
     }
 }
-
+*/
 void drawMap()
 {
 	// Display the map
@@ -217,15 +217,16 @@ float calculate_likelihood(float locx, float locy, float theta, float z)
 		  }
 
    }
-   return sample_gaussian(z, minimum, 1, 1);
+   return sample_gaussian(z, minimum, 0.01, 1);
 }
 
-float sample_gaussian(float mean, float x, float k, float sigma)
+float sample_gaussian(float sonar, float distance, float k, float sigma)
 {
 
 	//maybe dependant on distance
+  float likelihoodvalue = exp((-pow((sonar - distance),2)) / (2*pow(sigma,2))) + k;
 
-	return exp((-pow((mean - x),2)) / (2*pow(sigma,2))) + k;
+	return likelihoodvalue;
 }
 
 int between(float middle, float start, float finish)
@@ -415,10 +416,10 @@ void moveForward(float d)
   {
   }
 
-  updateParticleArraysForward(d);
-  update_weight_array();
-  normalise();
-  resample();
+  //updateParticleArraysForward(d);
+  //update_weight_array();
+  //normalise();
+  //resample();
 
   //theta = findAverageTheta();
   x = findAverageX();
@@ -455,10 +456,10 @@ void turnNDegrees(float a)
 
   motor[motorA] = 0;
   wait1Msec(1000);
-  updateParticleArraysRotate(a);
-  update_weight_array();
-  normalise();
-  resample();
+  //updateParticleArraysRotate(a);
+  //update_weight_array();
+  //normalise();
+  //resample();
   theta = findAverageTheta();
 }
 
@@ -501,7 +502,7 @@ task main (){
 	init(); //initialises everything
 
 	//turnNDegrees(0.34);
-  moveForward(89);
+  //moveForward(89);
 	//draw();
 
 	//scan 360 degrees

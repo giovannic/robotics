@@ -15,18 +15,19 @@ float findAverageX();
 float findAverageY();
 float findAverageTheta();
 float calculate_likelihood(float locx, float locy, float theta, float z);
-float sample_gaussian(float mean, float x, float k, float sigma);
+float sample_gaussian(float sonar, float distance, float k, float sigma);
 int between(float middle, float start, float finish);
 void normalise();
 void resample();
-void copyParticleData();
-void copyParticle(int from, int to);
+//void copyParticleData();
+//void copyParticle(int from, int to);
 void navigateToWaypoint (float new_x, float new_y);
 void moveForward(float d);
 void turnNDegrees(float a);
 float calculateAngle(float dx, float dy);
 float calculateDistance(float dx, float dy);
 void update_weight_array();
+//float pow(float a, int b);
 
 task main();
 
