@@ -18,7 +18,7 @@ void measurementUpdate(float sonar);
 // likelihood functions
 float scaleForAngle(float sample, float angle);
 float getGaussianValue(float m, float z);
-bool between(float mid, float sta, float fin);
+bool between(int mid, int sta, int fin);
 int getClosestWallForward(float xValue, float yValue, float thetaValue);
 int getClosestWallForwardDistance(float x, float y, float theta, int wall);
 float angleToWall(float theta, int wall);

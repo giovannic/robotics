@@ -185,8 +185,9 @@ float getGaussianValue(float m, float z)
 	return (exp(power) + constant);
 }
 
-bool between(float mid, float sta, float fin)
+bool between(int mid, int sta, int fin)
 {
+
 	//float mid = middle + 0.5;
 	//float sta = start + 0.5;
 	//float fin = finish + 0.5;
@@ -205,6 +206,10 @@ int getClosestWallForward(float xValue, float yValue, float thetaValue)
 		float bx = wallBxArray[i];
 		float ay = wallAyArray[i];
 		float by = wallByArray[i];
+		nxtDisplayCenteredTextLine(4, "ax: %f", (float)ax);
+		nxtDisplayCenteredTextLine(5, "bx: %f", (float)bx);
+		nxtDisplayCenteredTextLine(6, "ay: %f", (float)ay);
+		//nxtDisplayCenteredTextLine(7, "by: %f", (float)by);
 
 		float dx = bx - ax;
 		float dy = by - ay; //test with absoluute values CHECK THIS!!
@@ -213,22 +218,22 @@ int getClosestWallForward(float xValue, float yValue, float thetaValue)
 		float denominator = dy*sin(thetaValue) - dx*cos(thetaValue); //swapped
 		float distance = numerator/denominator;
 
-		float interY = (x + distance*sin(thetaValue));   // CHECK THIS!!!!!!!!!!! swapped   //SWAPPED INTERX AND Y
-		float interX = (y + distance*cos(thetaValue));
+		float interX = (x + distance*sin(thetaValue));   // CHECK THIS!!!!!!!!!!! swapped   //SWAPPED INTERX AND Y
+		float interY = (y + distance*cos(thetaValue));
 
 
 
 		bool collide = between(interX, ax, bx) && between(interY, ay, by);
 
-		//nxtDisplayCenteredTextLine(1, "interX: %f", (float)interX);
-		//nxtDisplayCenteredTextLine(2, "interY: %f", (float)interY);
+		nxtDisplayCenteredTextLine(1, "interX: %f", (float)interX);
+		nxtDisplayCenteredTextLine(2, "interY: %f", (float)interY);
 		nxtDisplayCenteredTextLine(3, "wall: %f", (float)i);
-		//nxtDisplayCenteredTextLine(4, "collide: %f", (float)collide);
-		nxtDisplayCenteredTextLine(5, "distance: %f", (float)distance);
-		nxtDisplayCenteredTextLine(6, "XValue: %f", (float)xValue);
-		nxtDisplayCenteredTextLine(7, "YValue: %f", (float)yValue);
-		nxtDisplayCenteredTextLine(1, "theta: %f", (float)thetaValue);
-		wait1Msec(5000);
+		nxtDisplayCenteredTextLine(7, "collide: %f", (float)collide);
+		//nxtDisplayCenteredTextLine(5, "distance: %f", (float)distance);
+		//nxtDisplayCenteredTextLine(6, "XValue: %f", (float)xValue);
+		//nxtDisplayCenteredTextLine(7, "YValue: %f", (float)yValue);
+		//nxtDisplayCenteredTextLine(3, "theta: %f", (float)thetaValue);
+		wait1Msec(1000);
 
 		if(distance >= 0 && (closestDistance == -1 || distance < closestDistance) && collide )
 		{
