@@ -6,10 +6,12 @@
 
 const int NUMBER_OF_PARTICLES = 100;
 
-int x = 0;
-int y = 0;
+float x = 0;
+float y = 0;
 float theta = 0;
 float motorPower = 30;
+float bound = 3;
+bool leftMotorDrive = false;
 
 const int NUMBER_OF_WALLS = 8;
 
@@ -38,12 +40,21 @@ void initialise()
         thetaArray[i] = 0;
         weightArray[i] = 1.0/((float) NUMBER_OF_PARTICLES);
     }
+    x = findAverageX();
+    y = findAverageY();
+    theta = findAverageTheta();
+}
+
+bool atTarget(float target, float currentLocation)
+{
+    return ((target - bound <= currentLocation) && (currentLocation <= bound + target));
 }
 
 
 void navigateToWaypoint(float xtarget, float ytarget)
 {
-    while ((xtarget != x) || (ytarget != y))
+    //while ((xtarget != x) || (ytarget != y))
+    while(!atTarget(xtarget, x) || (!atTarget(ytarget, y)))
     {
         float distance = calcDistance(xtarget, ytarget);
         float angle = calcAngle(xtarget, ytarget);
@@ -58,13 +69,32 @@ void navigateToWaypoint(float xtarget, float ytarget)
             driveDistance = stepDistance;
         }
 
+        nxtDisplayCenteredTextLine(3, "DD: %f", driveDistance);
+
+        float temp1 = x;
+	      float temp2 = y;
+        nxtDisplayCenteredTextLine(1, "X: %f", temp1);
+	      nxtDisplayCenteredTextLine(2, "Y: %f", temp2);
+	      //nxtDisplayCenteredTextLine(3, "Angle: %f", angle);
+	      //wait1Msec(5000);
+
         // co-ordinate system is different so cos and sin are swapped - take from current location not origin
         float tempWaypointX = x + (driveDistance * cos(angle));
         float tempWaypointY = y + (driveDistance * sin(angle));
 
+        nxtDisplayCenteredTextLine(5, "tempX: %f", tempWaypointX);
+	      nxtDisplayCenteredTextLine(6, "tempY: %f", tempWaypointY);
+
         driveToWaypoint(tempWaypointX, tempWaypointY);
-        monteCarlo();
-        wait1Msec(500);
+        //monteCarlo();
+
+        //float temp1 = x;
+	      //float temp2 = y;
+
+        nxtDisplayCenteredTextLine(1, "X: %f", temp1);
+	      nxtDisplayCenteredTextLine(2, "Y: %f", temp2);
+	      nxtDisplayCenteredTextLine(3, "Theta: %f", theta);
+        wait1Msec(100);
 
     }
 
@@ -111,8 +141,6 @@ float calcAngle(float xtarget, float ytarget)
 			targetAngle = -atan( abs(dx) / dy );
 		}
 
-		//float newAngle = targetAngle - theta;
-
 		return targetAngle;
 }
 
@@ -124,10 +152,9 @@ float calcAngle(float xtarget, float ytarget)
 
 void monteCarlo()
 {
-  //measurementUpdate();
-  //normalisation();
-  //resampling();
-
+  measurementUpdate();
+  normalisation();
+  resampling();
 }
 
 void measurementUpdate()
@@ -246,7 +273,7 @@ float angleToWall(float theta, int wall)
 	float denominator = sqrt((dy*dy) + (dx*dx));
 	float fraction = numerator/denominator;
 
-	return  abs(acos(fraction));
+	return  abs(acos(fraction)); //check
 }
 
 float calculateLiklihood(float x, float y, float theta, float z)
@@ -300,6 +327,20 @@ void resampling()
 	{
 	    weightArray[j] = 1.0/ (float)NUMBER_OF_PARTICLES;
 	}
+
+	//Update values after resampling!!
+	x = findAverageX();
+	y = findAverageY();
+	theta = findAverageTheta();
+
+	float temp1 = x;
+	float temp2 = y;
+
+  nxtDisplayCenteredTextLine(1, "X: %f", temp1);
+	nxtDisplayCenteredTextLine(2, "Y: %f", temp2);
+	nxtDisplayCenteredTextLine(3, "Theta: %f", theta);
+
+	wait1Msec(3000);
 }
 
 int getRandomParticleIndex()
@@ -336,10 +377,16 @@ void updateParticleArraysForward(float distanceMoved)
 	for (int particle = 0; particle < NUMBER_OF_PARTICLES; particle++)
 	{
 
+
 		//e = sampleGaussian(0.0, 0.005);
-	  e = sampleGaussian(0.0, 1);
+	  //e = sampleGaussian(0.0, 1.5);
 		//f = sampleGaussian(0.0, 0.008);
-	  f = sampleGaussian(0.0, 0.1);
+	  //f = sampleGaussian(0, 0.1); //Biased mean on purpose as one motor/wheel stronger than the other
+
+	  //nxtDisplayCenteredTextLine(1, "MG: %f", e);
+	  //nxtDisplayCenteredTextLine(2, "RG: %f", f);
+
+	  //wait1Msec(500);
 
 		xArray[particle] = xArray[particle] + (distanceMoved + e)*sin(thetaArray[particle]);
 		yArray[particle] = yArray[particle] + (distanceMoved + e)*cos(thetaArray[particle]);
@@ -349,12 +396,20 @@ void updateParticleArraysForward(float distanceMoved)
 
 void updateParticleArraysRotate(float degTurned)
 {
+  float total = 0;
 	for (int particle = 0; particle < NUMBER_OF_PARTICLES; particle++)
 	{
+    //float g = 0;
+		float g = sampleGaussian(0.0, 0.005); //UPDATE THIS.
+	  //float g = sampleGaussian(0.0, 0.5);
+	  //float g =sampleGaussian(0.0, 0.5);
 
-		float g = sampleGaussian(0.0, 0.005);
+	  total += g;
+
 		thetaArray[particle] = thetaArray[particle] + (degTurned + g);
 	}
+	nxtDisplayCenteredTextLine(7, "G: %f", total/(float)NUMBER_OF_PARTICLES);
+	wait1Msec(500);
 }
 
 float findAverageX()
@@ -363,9 +418,10 @@ float findAverageX()
   int i = 0;
    for ( i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
+     //total = total + (xArray[i] * weightArray[i]);
      total += xArray[i];
    }
-   return (total / NUMBER_OF_PARTICLES);
+   return total/((float)NUMBER_OF_PARTICLES); //Fixed to allow for weights...
 }
 
 float findAverageY()
@@ -374,9 +430,10 @@ float findAverageY()
   int i = 0;
    for ( i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
-     total += yArray[i];
+          //total = total + (yArray[i] * weightArray[i]);
+      total+=yArray[i];
    }
-   return (total / NUMBER_OF_PARTICLES);
+   return total/((float)NUMBER_OF_PARTICLES); //Fixed to allow for weights...
 }
 
 float findAverageTheta()
@@ -385,9 +442,10 @@ float findAverageTheta()
   int i = 0;
    for ( i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
+     //total = total + (thetaArray[i] * weightArray[i]);
      total += thetaArray[i];
    }
-   return (total / NUMBER_OF_PARTICLES);
+   return total/((float)NUMBER_OF_PARTICLES); //Fixed to allow for weights...
 
 }
 
@@ -431,18 +489,45 @@ void driveToWaypoint (float new_x, float new_y)
 //d in cm
 void moveForward(float d)
 {
-  float lastMotorValue = 0;
-  float distanceMoved = 0;
-  float currentDistance = 0;
-  nSyncedMotors = synchAB;
-  nSyncedTurnRatio = 100;
-  float lineStart = nMotorEncoder[motorA];
-  motor[motorA] = motorPower;
+  //float lastMotorValue = 0;
+  //float distanceMoved = 0;  //Why are these here?...
+  //float currentDistance = 0;
+
+
+
+
+
+   // ATTEMPTS TO CORRECT SLAVE AND MASTER
+  float lineStart;
+   nSyncedTurnRatio = 100;
+
   float  encoderLimit = ENC_P_CM*d;
 
-  while((nMotorEncoder[motorA] - lineStart) < encoderLimit)
+  // switch the slave and master
+  if (leftMotorDrive)
   {
+     nSyncedMotors = synchBA;
+     lineStart = nMotorEncoder[motorB];
+     motor[motorB] = motorPower;
+      while((nMotorEncoder[motorB] - lineStart) < encoderLimit)
+      {
+      }
   }
+  else
+  {
+     nSyncedMotors = synchAB;
+     lineStart = nMotorEncoder[motorA];
+     motor[motorA] = motorPower;
+      while((nMotorEncoder[motorA] - lineStart) < encoderLimit)
+      {
+      }
+  }
+
+  leftMotorDrive = !leftMotorDrive;
+
+
+
+
 
 
   updateParticleArraysForward(d);
@@ -450,6 +535,7 @@ void moveForward(float d)
   theta = findAverageTheta();
   x = findAverageX();
   y = findAverageY();
+  motor[motorB] = 0;
   motor[motorA] = 0;  // turn the motors off.
 
 }

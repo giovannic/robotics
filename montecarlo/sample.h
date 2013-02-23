@@ -2,7 +2,14 @@
 float sampleUniform(float max)
 {
 		// Converts random int to correct float range
-		return max * (float)(random(30000)) / 30000.0;
+		//return max * (float)(random(30000)) / 30000.0;
+
+
+    // NEW RANDOM
+    int negposRng = 0;
+    negposRng = rand();//%65536;
+	  return (float)(negposRng) / 65536.0;    // CHECK THIS
+
 }
 
 // Return a random number sampled from a Gaussian distribution with
@@ -10,7 +17,8 @@ float sampleUniform(float max)
 float sampleGaussian(float mean, float sigma)
 {
   float u     = sampleUniform(1.0);
-  float theta = sampleUniform(2 * PI);
+  float theta = sampleUniform(1.0) * 2 * PI;
+  //float theta = sampleUniform(2 * PI);
 
   // Fix to avoid infinity problem
   if (u == 0) {

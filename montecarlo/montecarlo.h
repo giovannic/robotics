@@ -8,7 +8,7 @@ void navigateToWaypoint(float xtarget, float ytarget);
 
 float calcDistance(float xtarget, float ytarget);
 float calcAngle(float xtarget, float ytarget);
-
+bool atTarget(float target, float currentLocation);
 
 
 // **** monte carlo methods ****
