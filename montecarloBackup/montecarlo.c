@@ -86,7 +86,7 @@ void navigateToWaypoint(float xtarget, float ytarget)
 	      nxtDisplayCenteredTextLine(6, "tempY: %f", tempWaypointY);
 
         driveToWaypoint(tempWaypointX, tempWaypointY);
-        monteCarlo();
+        //monteCarlo();
 
         //float temp1 = x;
 	      //float temp2 = y;
@@ -323,7 +323,6 @@ void resampling()
 	yArray = newY;
 	thetaArray = newTheta;
 
-	// put all weights back to an equal distribution
 	for (int j = 0; j < NUMBER_OF_PARTICLES; ++j )
 	{
 	    weightArray[j] = 1.0/ (float)NUMBER_OF_PARTICLES;
@@ -341,6 +340,7 @@ void resampling()
 	nxtDisplayCenteredTextLine(2, "Y: %f", temp2);
 	nxtDisplayCenteredTextLine(3, "Theta: %f", theta);
 
+	wait1Msec(3000);
 }
 
 int getRandomParticleIndex()
@@ -378,9 +378,9 @@ void updateParticleArraysForward(float distanceMoved)
 	{
 
 
-		e = sampleGaussian(0.0, 0.005);
+		//e = sampleGaussian(0.0, 0.005);
 	  //e = sampleGaussian(0.0, 1.5);
-		f = sampleGaussian(0.0, 0.008);
+		//f = sampleGaussian(0.0, 0.008);
 	  //f = sampleGaussian(0, 0.1); //Biased mean on purpose as one motor/wheel stronger than the other
 
 	  //nxtDisplayCenteredTextLine(1, "MG: %f", e);
@@ -409,7 +409,7 @@ void updateParticleArraysRotate(float degTurned)
 		thetaArray[particle] = thetaArray[particle] + (degTurned + g);
 	}
 	nxtDisplayCenteredTextLine(7, "G: %f", total/(float)NUMBER_OF_PARTICLES);
-	//wait1Msec(500);
+	wait1Msec(500);
 }
 
 float findAverageX()
@@ -418,11 +418,10 @@ float findAverageX()
   int i = 0;
    for ( i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
-     total = total + (xArray[i] * weightArray[i]);
-     //total += xArray[i];
+     //total = total + (xArray[i] * weightArray[i]);
+     total += xArray[i];
    }
-   return total;
-   //return total/((float)NUMBER_OF_PARTICLES); //Fixed to allow for weights...
+   return total/((float)NUMBER_OF_PARTICLES); //Fixed to allow for weights...
 }
 
 float findAverageY()
@@ -431,11 +430,10 @@ float findAverageY()
   int i = 0;
    for ( i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
-          total = total + (yArray[i] * weightArray[i]);
-      //total+=yArray[i];
+          //total = total + (yArray[i] * weightArray[i]);
+      total+=yArray[i];
    }
-   return total;
-   //return total/((float)NUMBER_OF_PARTICLES); //Fixed to allow for weights...
+   return total/((float)NUMBER_OF_PARTICLES); //Fixed to allow for weights...
 }
 
 float findAverageTheta()
@@ -444,11 +442,10 @@ float findAverageTheta()
   int i = 0;
    for ( i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
-     total = total + (thetaArray[i] * weightArray[i]);
-     //total += thetaArray[i];
+     //total = total + (thetaArray[i] * weightArray[i]);
+     total += thetaArray[i];
    }
-   return total;
-   //return total/((float)NUMBER_OF_PARTICLES); //Fixed to allow for weights...
+   return total/((float)NUMBER_OF_PARTICLES); //Fixed to allow for weights...
 
 }
 
