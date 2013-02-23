@@ -69,31 +69,15 @@ void navigateToWaypoint(float xtarget, float ytarget)
             driveDistance = stepDistance;
         }
 
-        nxtDisplayCenteredTextLine(3, "DD: %f", driveDistance);
-
-        float temp1 = x;
-	      float temp2 = y;
-        nxtDisplayCenteredTextLine(1, "X: %f", temp1);
-	      nxtDisplayCenteredTextLine(2, "Y: %f", temp2);
-	      //nxtDisplayCenteredTextLine(3, "Angle: %f", angle);
-	      //wait1Msec(5000);
-
         // co-ordinate system is different so cos and sin are swapped - take from current location not origin
         float tempWaypointX = x + (driveDistance * cos(angle));
         float tempWaypointY = y + (driveDistance * sin(angle));
 
-        nxtDisplayCenteredTextLine(5, "tempX: %f", tempWaypointX);
-	      nxtDisplayCenteredTextLine(6, "tempY: %f", tempWaypointY);
 
         driveToWaypoint(tempWaypointX, tempWaypointY);
         monteCarlo();
 
-        //float temp1 = x;
-	      //float temp2 = y;
 
-        nxtDisplayCenteredTextLine(1, "X: %f", temp1);
-	      nxtDisplayCenteredTextLine(2, "Y: %f", temp2);
-	      nxtDisplayCenteredTextLine(3, "Theta: %f", theta);
         wait1Msec(100);
 
     }
@@ -152,20 +136,24 @@ float calcAngle(float xtarget, float ytarget)
 
 void monteCarlo()
 {
-  measurementUpdate();
+  float sonar = SensorValue(sonar_sensor) - 6; // allow for distance between sonar and centre of wheelbase
+
+  if (sonar < 10 || sonar > 150) {return;}
+
+  measurementUpdate(sonar);
   normalisation();
   resampling();
 }
 
-void measurementUpdate()
+void measurementUpdate(float sonar)
 {
-    float sonar = SensorValue(sonar_sensor) - 8; // allow for distance between sonar and centre of wheelbase
+
     for (int i = 0; i < NUMBER_OF_PARTICLES; ++i)
     {
-        int particlesX = xArray[i];
-        int particlesY = yArray[i];
-        int particlesTheta = thetaArray[i];
-        weightArray[i] = weightArray[i] * calculateLiklihood(particlesX, particlesY, particlesTheta, sonar);
+        float particlesX = xArray[i];
+        float particlesY = yArray[i];
+        float particlesTheta = thetaArray[i];
+        weightArray[i] = weightArray[i] * calculateLikelihood(particlesX, particlesY, particlesTheta, sonar);
     }
 }
 
@@ -197,21 +185,21 @@ float getGaussianValue(float m, float z)
 	return (exp(power) + constant);
 }
 
-int between(float middle, float start, float finish)
+bool between(float mid, float sta, float fin)
 {
-	float mid = middle + 0.5;
-	float sta = start + 0.5;
-	float fin = finish + 0.5;
+	//float mid = middle + 0.5;
+	//float sta = start + 0.5;
+	//float fin = finish + 0.5;
 
 	return ( mid >= sta && mid <= fin) || (mid >= fin && mid <= sta);
 }
 
-int getClosestWallForward(float x, float y, float theta)
+int getClosestWallForward(float xValue, float yValue, float thetaValue)
 {
 	float closestDistance = -1;
-	int closestWall = 0;
+	int closestWall = -1;
 
-	for(int i = 0 ; i < NUMBER_OF_WALLS ; i++)
+	for(int i = 0 ; i < NUMBER_OF_WALLS ; ++i)
 	{
 		float ax = wallAxArray[i];
 		float bx = wallBxArray[i];
@@ -219,16 +207,28 @@ int getClosestWallForward(float x, float y, float theta)
 		float by = wallByArray[i];
 
 		float dx = bx - ax;
-		float dy = by - ay;
+		float dy = by - ay; //test with absoluute values CHECK THIS!!
 
-		float numerator = dy*(ax-x) - dx*(ay-y);
-		float denominator = dy*cos(theta) - dx*sin(theta);
+		float numerator = dy*(ax-xValue) - dx*(ay-yValue);
+		float denominator = dy*sin(thetaValue) - dx*cos(thetaValue); //swapped
 		float distance = numerator/denominator;
 
-		float interX = (x + distance*sin(theta));   // CHECK THIS!!!!!!!!!!!
-		float interY = (y + distance*cos(theta));
+		float interY = (x + distance*sin(thetaValue));   // CHECK THIS!!!!!!!!!!! swapped   //SWAPPED INTERX AND Y
+		float interX = (y + distance*cos(thetaValue));
 
-		int collide = between(interX, ax, bx) && between(interY, ay, by);
+
+
+		bool collide = between(interX, ax, bx) && between(interY, ay, by);
+
+		//nxtDisplayCenteredTextLine(1, "interX: %f", (float)interX);
+		//nxtDisplayCenteredTextLine(2, "interY: %f", (float)interY);
+		nxtDisplayCenteredTextLine(3, "wall: %f", (float)i);
+		//nxtDisplayCenteredTextLine(4, "collide: %f", (float)collide);
+		nxtDisplayCenteredTextLine(5, "distance: %f", (float)distance);
+		nxtDisplayCenteredTextLine(6, "XValue: %f", (float)xValue);
+		nxtDisplayCenteredTextLine(7, "YValue: %f", (float)yValue);
+		nxtDisplayCenteredTextLine(1, "theta: %f", (float)thetaValue);
+		wait1Msec(5000);
 
 		if(distance >= 0 && (closestDistance == -1 || distance < closestDistance) && collide )
 		{
@@ -276,13 +276,18 @@ float angleToWall(float theta, int wall)
 	return  abs(acos(fraction)); //check
 }
 
-float calculateLiklihood(float x, float y, float theta, float z)
+float calculateLikelihood(float x, float y, float theta, float z)
 {
   int wall = getClosestWallForward(x,y,theta);
+  nxtDisplayCenteredTextLine(1, "Wall: %f", (float)wall);
 	float expectedDepth = getClosestWallForwardDistance(x,y,theta,wall);
+	nxtDisplayCenteredTextLine(2, "DToWall: %f", (float)expectedDepth);
 	float sample = getGaussianValue(expectedDepth,z);
+	nxtDisplayCenteredTextLine(3, "Sample: %f", (float)sample);
 	float angle = angleToWall(theta,wall);
+	nxtDisplayCenteredTextLine(4, "Angle: %f", (float)angle);
 	float result = scaleForAngle(sample,angle);
+	wait1Msec(100);
 	return result;
 }
 
@@ -378,15 +383,10 @@ void updateParticleArraysForward(float distanceMoved)
 	{
 
 
-		e = sampleGaussian(0.0, 0.005);
+		//e = sampleGaussian(0.0, 0.005);
 	  //e = sampleGaussian(0.0, 1.5);
-		f = sampleGaussian(0.0, 0.008);
+		//f = sampleGaussian(0.0, 0.008);
 	  //f = sampleGaussian(0, 0.1); //Biased mean on purpose as one motor/wheel stronger than the other
-
-	  //nxtDisplayCenteredTextLine(1, "MG: %f", e);
-	  //nxtDisplayCenteredTextLine(2, "RG: %f", f);
-
-	  //wait1Msec(500);
 
 		xArray[particle] = xArray[particle] + (distanceMoved + e)*sin(thetaArray[particle]);
 		yArray[particle] = yArray[particle] + (distanceMoved + e)*cos(thetaArray[particle]);
@@ -396,20 +396,16 @@ void updateParticleArraysForward(float distanceMoved)
 
 void updateParticleArraysRotate(float degTurned)
 {
-  float total = 0;
 	for (int particle = 0; particle < NUMBER_OF_PARTICLES; particle++)
 	{
     //float g = 0;
-		float g = sampleGaussian(0.0, 0.005); //UPDATE THIS.
+		float g = 0;//sampleGaussian(0.0, 0.005); //UPDATE THIS.
 	  //float g = sampleGaussian(0.0, 0.5);
 	  //float g =sampleGaussian(0.0, 0.5);
 
-	  total += g;
 
 		thetaArray[particle] = thetaArray[particle] + (degTurned + g);
 	}
-	nxtDisplayCenteredTextLine(7, "G: %f", total/(float)NUMBER_OF_PARTICLES);
-	//wait1Msec(500);
 }
 
 float findAverageX()
@@ -419,10 +415,8 @@ float findAverageX()
    for ( i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
      total = total + (xArray[i] * weightArray[i]);
-     //total += xArray[i];
    }
    return total;
-   //return total/((float)NUMBER_OF_PARTICLES); //Fixed to allow for weights...
 }
 
 float findAverageY()
@@ -432,10 +426,8 @@ float findAverageY()
    for ( i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
           total = total + (yArray[i] * weightArray[i]);
-      //total+=yArray[i];
    }
    return total;
-   //return total/((float)NUMBER_OF_PARTICLES); //Fixed to allow for weights...
 }
 
 float findAverageTheta()
@@ -445,10 +437,8 @@ float findAverageTheta()
    for ( i = 0; i < NUMBER_OF_PARTICLES; ++i)
    {
      total = total + (thetaArray[i] * weightArray[i]);
-     //total += thetaArray[i];
    }
    return total;
-   //return total/((float)NUMBER_OF_PARTICLES); //Fixed to allow for weights...
 
 }
 

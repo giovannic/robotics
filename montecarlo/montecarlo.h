@@ -13,16 +13,16 @@ bool atTarget(float target, float currentLocation);
 
 // **** monte carlo methods ****
 void monteCarlo();
-void measurementUpdate();
+void measurementUpdate(float sonar);
 
 // likelihood functions
 float scaleForAngle(float sample, float angle);
 float getGaussianValue(float m, float z);
-int between(float middle, float start, float finish);
-int getClosestWallForward(float x, float y, float theta);
+bool between(float mid, float sta, float fin);
+int getClosestWallForward(float xValue, float yValue, float thetaValue);
 int getClosestWallForwardDistance(float x, float y, float theta, int wall);
 float angleToWall(float theta, int wall);
-float calculateLiklihood(float x, float y, float theta, float z);
+float calculateLikelihood(float x, float y, float theta, float z);
 // **************
 
 void normalisation();
