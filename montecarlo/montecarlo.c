@@ -185,12 +185,12 @@ float getGaussianValue(float m, float z)
 	return (exp(power) + constant);
 }
 
-bool between(int mid, int sta, int fin)
+bool between(float middle, float start, float finish)
 {
 
-	//float mid = middle + 0.5;
-	//float sta = start + 0.5;
-	//float fin = finish + 0.5;
+	int mid = middle + 0.5;
+	int sta = start + 0.5;
+	int fin = finish + 0.5;
 
 	return ( mid >= sta && mid <= fin) || (mid >= fin && mid <= sta);
 }
@@ -206,10 +206,10 @@ int getClosestWallForward(float xValue, float yValue, float thetaValue)
 		float bx = wallBxArray[i];
 		float ay = wallAyArray[i];
 		float by = wallByArray[i];
-		nxtDisplayCenteredTextLine(4, "ax: %f", (float)ax);
-		nxtDisplayCenteredTextLine(5, "bx: %f", (float)bx);
-		nxtDisplayCenteredTextLine(6, "ay: %f", (float)ay);
-		//nxtDisplayCenteredTextLine(7, "by: %f", (float)by);
+	//	nxtDisplayCenteredTextLine(4, "ax: %f", (float)ax);
+	//	nxtDisplayCenteredTextLine(5, "bx: %f", (float)bx);
+	//	nxtDisplayCenteredTextLine(6, "ay: %f", (float)ay);
+	//	nxtDisplayCenteredTextLine(7, "by: %f", (float)by);
 
 		float dx = bx - ax;
 		float dy = by - ay; //test with absoluute values CHECK THIS!!
@@ -218,22 +218,22 @@ int getClosestWallForward(float xValue, float yValue, float thetaValue)
 		float denominator = dy*sin(thetaValue) - dx*cos(thetaValue); //swapped
 		float distance = numerator/denominator;
 
-		float interX = (x + distance*sin(thetaValue));   // CHECK THIS!!!!!!!!!!! swapped   //SWAPPED INTERX AND Y
-		float interY = (y + distance*cos(thetaValue));
+		float interX = (xValue + distance*sin(thetaValue));   // CHECK THIS!!!!!!!!!!! swapped   //SWAPPED INTERX AND Y
+		float interY = (yValue + distance*cos(thetaValue));
 
 
 
 		bool collide = between(interX, ax, bx) && between(interY, ay, by);
 
-		nxtDisplayCenteredTextLine(1, "interX: %f", (float)interX);
-		nxtDisplayCenteredTextLine(2, "interY: %f", (float)interY);
-		nxtDisplayCenteredTextLine(3, "wall: %f", (float)i);
-		nxtDisplayCenteredTextLine(7, "collide: %f", (float)collide);
+		//nxtDisplayCenteredTextLine(1, "interX: %f", (float)interX);
+		//nxtDisplayCenteredTextLine(2, "interY: %f", (float)interY);
+	nxtDisplayCenteredTextLine(3, "wall: %f", (float)i);
+	//	nxtDisplayCenteredTextLine(1, "collide: %f", (float)collide);
 		//nxtDisplayCenteredTextLine(5, "distance: %f", (float)distance);
 		//nxtDisplayCenteredTextLine(6, "XValue: %f", (float)xValue);
 		//nxtDisplayCenteredTextLine(7, "YValue: %f", (float)yValue);
 		//nxtDisplayCenteredTextLine(3, "theta: %f", (float)thetaValue);
-		wait1Msec(1000);
+
 
 		if(distance >= 0 && (closestDistance == -1 || distance < closestDistance) && collide )
 		{
@@ -242,10 +242,16 @@ int getClosestWallForward(float xValue, float yValue, float thetaValue)
 		}
 	}
 
+		if(closestWall == -1)
+	  {
+	    wait1Msec(10000);
+	    	nxtDisplayCenteredTextLine(3, "wall: %f", 123.0);
+	  }
+
 	return closestWall;
 }
 
-int getClosestWallForwardDistance(float x, float y, float theta, int wall)
+int getClosestWallForwardDistance(float xValue, float yValue, float thetaValue, int wall)
 {
 
 	float ax = wallAxArray[wall];
@@ -256,9 +262,9 @@ int getClosestWallForwardDistance(float x, float y, float theta, int wall)
 	float dx = bx - ax;
 	float dy = by - ay;
 
-	float numerator = dy*(ax-x) - dx*(ay-y);
-	float denominator = dy*cos(theta) - dx*sin(theta);
-	float distance = numerator/denominator;
+		float numerator = dy*(ax-xValue) - dx*(ay-yValue);
+		float denominator = dy*sin(thetaValue) - dx*cos(thetaValue); //swapped
+		float distance = numerator/denominator;
 
 	return distance;
 }
@@ -274,17 +280,18 @@ float angleToWall(float theta, int wall)
 	float dx = bx - ax;
 	float dy = ay - by;
 
-	float numerator = dy*cos(theta) + dx*sin(theta);
+	float numerator = dy*sin(theta) + dx*cos(theta); //cos and sin swapped
 	float denominator = sqrt((dy*dy) + (dx*dx));
 	float fraction = numerator/denominator;
 
-	return  abs(acos(fraction)); //check
+	return  abs(asin(fraction)); //check //cos and sin swapped
 }
 
 float calculateLikelihood(float x, float y, float theta, float z)
 {
   int wall = getClosestWallForward(x,y,theta);
   nxtDisplayCenteredTextLine(1, "Wall: %f", (float)wall);
+  //wait1Msec(5000);
 	float expectedDepth = getClosestWallForwardDistance(x,y,theta,wall);
 	nxtDisplayCenteredTextLine(2, "DToWall: %f", (float)expectedDepth);
 	float sample = getGaussianValue(expectedDepth,z);
@@ -292,7 +299,7 @@ float calculateLikelihood(float x, float y, float theta, float z)
 	float angle = angleToWall(theta,wall);
 	nxtDisplayCenteredTextLine(4, "Angle: %f", (float)angle);
 	float result = scaleForAngle(sample,angle);
-	wait1Msec(100);
+	//wait1Msec(100);
 	return result;
 }
 
@@ -388,9 +395,9 @@ void updateParticleArraysForward(float distanceMoved)
 	{
 
 
-		//e = sampleGaussian(0.0, 0.005);
+		e = sampleGaussian(0.0, 0.005);
 	  //e = sampleGaussian(0.0, 1.5);
-		//f = sampleGaussian(0.0, 0.008);
+		f = sampleGaussian(0.0, 0.008);
 	  //f = sampleGaussian(0, 0.1); //Biased mean on purpose as one motor/wheel stronger than the other
 
 		xArray[particle] = xArray[particle] + (distanceMoved + e)*sin(thetaArray[particle]);
@@ -404,7 +411,7 @@ void updateParticleArraysRotate(float degTurned)
 	for (int particle = 0; particle < NUMBER_OF_PARTICLES; particle++)
 	{
     //float g = 0;
-		float g = 0;//sampleGaussian(0.0, 0.005); //UPDATE THIS.
+    float g = sampleGaussian(0.0, 0.005); //UPDATE THIS.
 	  //float g = sampleGaussian(0.0, 0.5);
 	  //float g =sampleGaussian(0.0, 0.5);
 
@@ -477,7 +484,7 @@ void driveToWaypoint (float new_x, float new_y)
 
 	float newAngle = targetAngle - theta;
 
-	wait1Msec(1000);
+	//wait1Msec(1000);
 	turnNDegrees(newAngle);
 
 	moveForward(sqrt((dx*dx) + (dy*dy)));
@@ -579,6 +586,9 @@ task main ()
     initialise();
 
     //navigateToWaypoint (84, 30);
+
+
+
     navigateToWaypoint (180, 30);
 	  navigateToWaypoint (180, 54);
 	  navigateToWaypoint (126, 54);
