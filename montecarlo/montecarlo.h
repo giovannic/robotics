@@ -43,6 +43,14 @@ void moveForward(float d);
 void turnNDegrees(float a);
 // ******************************
 
+// **** drawing methods ****
+
+void drawMap();
+void drawPosition(float x, float y);
+void drawParticles();
+
+// ******************************
+
 task main();
 
 #endif

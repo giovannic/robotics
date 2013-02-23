@@ -4,7 +4,7 @@
 
 #include "montecarlo.h"
 
-const int NUMBER_OF_PARTICLES = 100;
+const int NUMBER_OF_PARTICLES = 100; //more!!
 
 float x = 0;
 float y = 0;
@@ -15,7 +15,8 @@ bool leftMotorDrive = false;
 
 const int NUMBER_OF_WALLS = 8;
 
-const float ENC_P_CM = 21.157;
+//const float ROT_ENC_P_CM = 21.157;
+const float ENC_P_CM = 16;
 //const int OFFSET = 10;
 
 const float stepDistance = 20; //cm
@@ -77,7 +78,9 @@ void navigateToWaypoint(float xtarget, float ytarget)
         driveToWaypoint(tempWaypointX, tempWaypointY);
         monteCarlo();
 
-
+        eraseDisplay();
+        drawMap();
+        drawParticles();
         wait1Msec(100);
 
     }
@@ -137,7 +140,7 @@ float calcAngle(float xtarget, float ytarget)
 void monteCarlo()
 {
   float sonar = SensorValue(sonar_sensor) - 6; // allow for distance between sonar and centre of wheelbase
-
+  	nxtDisplayCenteredTextLine(1, "sonar: %f", (float)sonar);
   if (sonar < 10 || sonar > 150) {return;}
 
   measurementUpdate(sonar);
@@ -175,11 +178,11 @@ float scaleForAngle(float sample, float angle)
 
 float getGaussianValue(float m, float z)
 {
-	float sigma = 1;
-	float constant = 0.1;
+	float sigma = 5;
+	float constant = 1; //change
 
 	float numerator = - ((z-m) * (z-m));
-	float denominator = 2 * (sigma * sigma);
+	float denominator = 2 * (sigma * sigma); //CHANGE
 	float power = numerator/denominator;
 
 	return (exp(power) + constant);
@@ -227,7 +230,7 @@ int getClosestWallForward(float xValue, float yValue, float thetaValue)
 
 		//nxtDisplayCenteredTextLine(1, "interX: %f", (float)interX);
 		//nxtDisplayCenteredTextLine(2, "interY: %f", (float)interY);
-	nxtDisplayCenteredTextLine(3, "wall: %f", (float)i);
+	//nxtDisplayCenteredTextLine(3, "wall: %f", (float)i);
 	//	nxtDisplayCenteredTextLine(1, "collide: %f", (float)collide);
 		//nxtDisplayCenteredTextLine(5, "distance: %f", (float)distance);
 		//nxtDisplayCenteredTextLine(6, "XValue: %f", (float)xValue);
@@ -242,11 +245,11 @@ int getClosestWallForward(float xValue, float yValue, float thetaValue)
 		}
 	}
 
-		if(closestWall == -1)
+		/*if(closestWall == -1)
 	  {
 	    wait1Msec(10000);
 	    	nxtDisplayCenteredTextLine(3, "wall: %f", 123.0);
-	  }
+	  }*/
 
 	return closestWall;
 }
@@ -290,14 +293,21 @@ float angleToWall(float theta, int wall)
 float calculateLikelihood(float x, float y, float theta, float z)
 {
   int wall = getClosestWallForward(x,y,theta);
-  nxtDisplayCenteredTextLine(1, "Wall: %f", (float)wall);
+  if(wall == -1)
+  {
+    return 0; //Particle out the map - assign it 0 weight.
+  }
+  //nxtDisplayCenteredTextLine(1, "Wall: %f", (float)wall);
   //wait1Msec(5000);
 	float expectedDepth = getClosestWallForwardDistance(x,y,theta,wall);
-	nxtDisplayCenteredTextLine(2, "DToWall: %f", (float)expectedDepth);
+	//nxtDisplayCenteredTextLine(2, "DToWall: %f", (float)expectedDepth);
 	float sample = getGaussianValue(expectedDepth,z);
-	nxtDisplayCenteredTextLine(3, "Sample: %f", (float)sample);
+
+	//return sample;
+
+	//nxtDisplayCenteredTextLine(3, "Sample: %f", (float)sample);
 	float angle = angleToWall(theta,wall);
-	nxtDisplayCenteredTextLine(4, "Angle: %f", (float)angle);
+	//nxtDisplayCenteredTextLine(4, "Angle: %f", (float)angle);
 	float result = scaleForAngle(sample,angle);
 	//wait1Msec(100);
 	return result;
@@ -340,6 +350,7 @@ void resampling()
 	yArray = newY;
 	thetaArray = newTheta;
 
+	wait1Msec(1000);
 	// put all weights back to an equal distribution
 	for (int j = 0; j < NUMBER_OF_PARTICLES; ++j )
 	{
@@ -354,9 +365,9 @@ void resampling()
 	float temp1 = x;
 	float temp2 = y;
 
-  nxtDisplayCenteredTextLine(1, "X: %f", temp1);
-	nxtDisplayCenteredTextLine(2, "Y: %f", temp2);
-	nxtDisplayCenteredTextLine(3, "Theta: %f", theta);
+  //nxtDisplayCenteredTextLine(1, "X: %f", temp1);
+	//nxtDisplayCenteredTextLine(2, "Y: %f", temp2);
+	//nxtDisplayCenteredTextLine(3, "Theta: %f", theta);
 
 }
 
@@ -395,9 +406,9 @@ void updateParticleArraysForward(float distanceMoved)
 	{
 
 
-		e = sampleGaussian(0.0, 0.005);
+		e = sampleGaussian(0.0, 1); //3
 	  //e = sampleGaussian(0.0, 1.5);
-		f = sampleGaussian(0.0, 0.008);
+		f = sampleGaussian(0.0, 0.01);
 	  //f = sampleGaussian(0, 0.1); //Biased mean on purpose as one motor/wheel stronger than the other
 
 		xArray[particle] = xArray[particle] + (distanceMoved + e)*sin(thetaArray[particle]);
@@ -576,14 +587,58 @@ void turnNDegrees(float a)
   theta = findAverageTheta();
 }
 
+/*********************************************************************
+**********************************************************************/
 
+
+/***********************************************************************
+***********************************************************************
+*********************** Draw Particles ********************************/
+
+// Number of cm per pixel in display
+const float DISPLAY_SCALE = 3.5;
+const int OFFSET = 3;
+
+void drawMap()
+{
+	// Display the map
+	for (int j = 0; j < NUMBER_OF_WALLS; j++)
+	{
+		nxtDrawLine((int)(wallAxArray[j]/DISPLAY_SCALE) + OFFSET, (int)(wallAyArray[j]/DISPLAY_SCALE) + OFFSET,
+			(int)(wallBxArray[j]/DISPLAY_SCALE) + OFFSET, (int)(wallByArray[j]/DISPLAY_SCALE) + OFFSET);
+	}
+}
+
+void drawPosition(float x, float y)
+{
+	// Draw new position
+	nxtSetPixel((int) (x/DISPLAY_SCALE) + OFFSET, (int) (y/DISPLAY_SCALE) + OFFSET);
+}
+
+void drawParticles()
+{
+	// Draw the particle set
+	for (int i = 0; i < NUMBER_OF_PARTICLES; i++)
+	{
+		drawPosition(xArray[i], yArray[i]);
+	}
+
+}
 
 /*********************************************************************
 **********************************************************************/
 
+
+
+
+
+
+
+
 task main ()
 {
     initialise();
+    drawMap();
 
     //navigateToWaypoint (84, 30);
 
