@@ -8,7 +8,7 @@ float sampleUniform(float max)
     // NEW RANDOM
     int negposRng = 0;
     negposRng = rand();//%65536;
-	  return (float)(negposRng) / 32768.0;    // CHECK THIS
+	  return (float)(negposRng) / 65536.0;    // CHECK THIS
 
 }
 
@@ -29,5 +29,5 @@ float sampleGaussian(float mean, float sigma)
 
   float x = r * cos(theta);
 
-  return mean + (sigma * x);
+  return mean + sigma * x;
 }
