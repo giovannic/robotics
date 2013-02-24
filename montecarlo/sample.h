@@ -1,5 +1,5 @@
 // Return a random number sampled uniformly from the range 0 to max
-float sampleUniform(float max)
+float sampleUniform()
 {
 		// Converts random int to correct float range
 		//return max * (float)(random(30000)) / 30000.0;
@@ -16,8 +16,8 @@ float sampleUniform(float max)
 // mean = mean, standard deviation = sigma
 float sampleGaussian(float mean, float sigma)
 {
-  float u     = sampleUniform(1.0);
-  float theta = sampleUniform(1.0) * 2 * PI;
+  float u     = sampleUniform();
+  float theta = sampleUniform() * 2 * PI;
   //float theta = sampleUniform(2 * PI);
 
   // Fix to avoid infinity problem

@@ -21,8 +21,8 @@ float getGaussianValue(float m, float z);
 bool between(float middle, float start, float finish);
 int getClosestWallForward(float xValue, float yValue, float thetaValue);
 int getClosestWallForwardDistance(float xValue, float yValue, float thetaValue, int wall);
-float angleToWall(float theta, int wall);
-float calculateLikelihood(float x, float y, float theta, float z);
+float angleToWall(float phi, int wall);
+float calculateLikelihood(float p_x, float p_y, float phi, float z);
 // **************
 
 void normalisation();
@@ -41,12 +41,13 @@ float findAverageTheta();
 void driveToWaypoint (float new_x, float new_y);
 void moveForward(float d);
 void turnNDegrees(float a);
+void rotateWMonte(float newAngle);
 // ******************************
 
 // **** drawing methods ****
 
 void drawMap();
-void drawPosition(float x, float y);
+void drawPosition(float p_x, float p_y);
 void drawParticles();
 
 // ******************************
