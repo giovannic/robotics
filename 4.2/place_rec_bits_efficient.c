@@ -225,7 +225,7 @@ void recognize_location()
     }
 
   // Display output
-  nxtDisplayCenteredTextLine(1, "Location: %d", bestLoc);
+  nxtDisplayCenteredTextLine(1, "Location: %d", bestLoc + 1);
 }
 
 
@@ -251,14 +251,15 @@ task main()
     learn_location();
   }
 
-  //test
-  while (!SensorValue[learnButton])
-      ;
-  recognize_location();
+
 
   while (true)
   {
-    wait10Msec(100);
+    //test
+    while (!SensorValue[learnButton])
+      ;
+    recognize_location();
+    wait1Msec(5000);
   }
 
   return;
