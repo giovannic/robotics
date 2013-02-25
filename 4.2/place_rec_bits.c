@@ -162,15 +162,35 @@ void recognize_location()
   loc_sig ls_obs;
   //characterize_location(ls_obs);
 
+  int min = -1;
+  int bestLoc = -1;
+  int accDiffs = 0;
+
+
   for ( short n=0; n<NO_LOCS; n++ )
     {
       loc_sig ls_read;
       read_signature_from_file(ls_read, n);
 
       // FILL IN: COMPARE ls_read with ls_obs and find the best match
+      for (int i = 0; i < NO_BINS; ++i)
+      {
+        int k = ls_obs - ls_read;
+        accDiffs += k*k;
+      }
+
+      if (min == -1 || accDiffs < min)
+      {
+        min = accDiffs;
+        bestLoc = n;
+      }
+
+      //reset accumulator
+      accDiffs = 0;
     }
 
   // Display output
+  nxtDisplayCenteredTextLine(1, "Location: %d", bestLoc);
 }
 
 
@@ -189,15 +209,19 @@ task main()
   form_file_names();
   delete_loc_files();
 
+  //learn
   for (int loc = 0; loc < NO_LOCS; ++loc){
     while (!sensorValue[learnButton])
       ;
     learn_location();
   }
 
-  //recognize_location();
+  //test
+  while (!sensorValue[learnButton])
+      ;
+  recognize_location();
 
-  while ( true )
+  while (true)
   {
     wait10Msec(100);
   }
