@@ -7,7 +7,7 @@
 
 
 /// Number of bins (measurements) considered to characterize one location
-#define NO_BINS 360
+#define NO_BINS 128
 
 /// Number of locations we want to learn in the environment
 #define NO_LOCS 5
@@ -160,7 +160,7 @@ void characterise_location(loc_sig& signature)
 		int value = nMotorEncoder[motorC];
 		if (value < 360)
 		{
-			signature.sig[value] = SensorValue(sonar_sensor);
+			signature.sig[SensorValue(sonar_sensor)/2]++;
 		}
 	}
 
