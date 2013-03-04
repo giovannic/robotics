@@ -136,7 +136,7 @@ void corridorTurn(int currentWaypoint, int destinationWaypoint)
   turnRadiansClockwise(a);
 }
 
-void downCorridor(int dest)
+void downCorridor(int from, int to)
 {
   //If the destination is waypoint 2 we need to train the odometry to drive
   //the correct distance whilst wall following.
@@ -150,6 +150,29 @@ void turnToWaypoint(int previous, int dest)
 {
   //Rotate to face the waypoint, for 1 and 3 this is dependent only on the
   //destination whereas for waypoint 2 we need to know where we came from.
+    //Turn based on arguments.
+  //Face sonar to the correct wall.
+  float a = 0;
+  switch(dest)
+  {
+    case 1:
+      a = -PI/2;
+      break;
+    case 2:
+      switch(previous)
+      {
+        case 1:
+          a = PI/2;
+          break;
+        case 3:
+          a = -PI/2;
+          break;
+      }
+    case 3:
+      a = PI/2;
+      break;
+  }
+  turnRadiansClockwise(a);
 }
 
 void driveToBackWall()
@@ -225,7 +248,7 @@ void beep()
 
 task main()
 {
-	//getIntoCorridor();
+	getIntoCorridor();
 
 	int currentWaypoint = calculateCurrentWaypoint();
 	nxtDisplayCenteredTextLine(3, "WP: %d", currentWaypoint);
@@ -252,7 +275,7 @@ task main()
 
 	/* First */
 	corridorTurn(currentWaypoint, first);/*
-	downCorridor(first);
+	downCorridor(currentWaypoint, first);
 	turnToWaypoint(currentWaypoint, first);
 	driveToBackWall();
 	chamberAdjust();
@@ -263,7 +286,7 @@ task main()
 	/*currentWaypoint = first;
 	getIntoCorridor();
 	corridorTurn(currentWaypoint, second);
-	downCorridor(second);
+	downCorridor(currentWaypoint, second);
 	turnToWaypoint(currentWaypoint, second);
 	driveToBackWall();
 	*/ /*chamberAdjust();
@@ -274,7 +297,7 @@ task main()
 	/*currentWaypoint = second;
 	getIntoCorridor();
 	corridorTurn(currentWaypoint, third);
-	downCorridor(third);
+	downCorridor(currentWaypoint, third);
 	turnToWaypoint(currentWaypoint, third);
 	driveToBackWall();
 	chamberAdjust();
