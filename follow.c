@@ -1,6 +1,7 @@
-void follow_wall()
+void follow_wall(int distance)
 {
-    float lastMotorValue = 0;
+
+  float lastMotorValue = 0;
   float distanceMoved = 0;
   float currentDistance = 0;
   nSyncedMotors = synchAB;
