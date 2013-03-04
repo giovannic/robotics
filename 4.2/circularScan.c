@@ -1,5 +1,8 @@
-#pragma config(Sensor, S1, sonar_sensor, sensorSONAR)
-#pragma config(Motor, motorC, Sonar_Motor, tmotorNormal, PIDControl, encoder)
+#pragma config(Sensor, S1,     sonar,               sensorSONAR)
+#pragma config(Sensor, S2,     bump,                sensorTouch)
+#pragma config(Motor,  motorA,          left,          tmotorNormal, PIDControl, encoder)
+#pragma config(Motor,  motorB,          right,         tmotorNormal, PIDControl, encoder)
+#pragma config(Motor,  motorC,          sonarMotor,    tmotorNormal, PIDControl, encoder)
 
 float scanMotorSpeed = 2;
 
@@ -33,7 +36,7 @@ void circularScan(loc_sig& signature)
 		int value = nMotorEncoder[motorC];
 		if (value < 360)
 		{
-			signature.sig[value] = SensorValue(sonar_sensor);
+			signature.sig[value] = SensorValue(sonar);
 		}
 	}
 

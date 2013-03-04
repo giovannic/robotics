@@ -21,6 +21,8 @@ void getIntoCorridor()
 {
 
   //Scan 360 and work out which array element is the largest sonar reading.
+
+  //Make this so it rotates the robot!
   circularScan(scan);
 
   int result = -1;
@@ -47,7 +49,7 @@ void getIntoCorridor()
   nxtDisplayCenteredTextLine(2, "TurnAngle: %f", turnAngle);
   wait1Msec(1000);
 
-  turnRadiansClockwise(-turnAngle);
+  turnRadiansClockwise(turnAngle); //minus removed
 
   nSyncedMotors = synchAB;
   nSyncedTurnRatio = 100;
@@ -81,7 +83,7 @@ int calculateCurrentWaypoint()
     nMotorEncoder[motorC] = 0;
     motor[motorC] = 20;
     while(nMotorEncoder[motorC] < 0)
-      ;  
+      ;
     motor[motorC] = 0;
     return 1;
   }
@@ -103,7 +105,7 @@ int calculateCurrentWaypoint()
   nMotorEncoder[motorC] = 0;
   motor[motorC] = -20;
   while(nMotorEncoder[motorC] > 0)
-    ;  
+    ;
   motor[motorC] = 0;
   return waypoint;
 }
@@ -155,10 +157,10 @@ void driveToBackWall()
 {
   //Drive forwards till the sonar gives a reading of 21.
 
-  nSynchedMotors = synchAB;
+  nSyncedMotors = synchAB;
   nSyncedTurnRatio = 100;
   motor[motorA] = 10;
-  while(SensorValue(sonar) > 21)
+  while(SensorValue(sonar) > 21 - sonarOffset)
     ;
   motor[motorA] = 0;
 
@@ -168,45 +170,50 @@ void chamberAdjust()
 {
   //Sonar look left + take reading.
   nMotorEncoder[motorC] = 0;
-  motor[motorC] = 5; 
+  motor[motorC] = 5;
   while(nMotorEncoder[motorC] < 90)
     ;
   motor[motorC] = 0;
   int leftReading = SensorValue(sonar);
+  nxtDisplayCenteredTextLine(1, "LR: %d", leftReading);
 
   //Sonar look right + take reading.
-  motor[motorC] = -5; 
+  motor[motorC] = -5;
   while(nMotorEncoder[motorC] > -90)
     ;
   motor[motorC] = 0;
   int rightReading = SensorValue(sonar);
+  nxtDisplayCenteredTextLine(2, "RR: %d", rightReading);
+
+
+  wait1Msec(5000);
   //Recenter sonar
-  motor[motorC] = 5; 
+  motor[motorC] = 5;
   while(nMotorEncoder[motorC] < 0)
     ;
   motor[motorC] = 0;
   //Adjust the position of the robot so that the left reading = right reading.
   if(leftReading > rightReading)
   {
-    turnRadiansClockwise(-PI/2);
-    nSynchedMotors = synchAB;
+    turnRadiansClockwise(PI/2);
+    nSyncedMotors = synchAB;
     nSyncedTurnRatio = 100;
     motor[motorA] = 5;
-    while( SensorValue(sonar) > 21)
+    while( SensorValue(sonar) > 21 - sonarOffset)
       ;
     motor[motorA] = 0;
-    turnRadiansClockwise(PI/2);
+    turnRadiansClockwise(-PI/2);
   }
   else if(leftReading < rightReading)
   {
-    turnRadiansClockwise(PI/2);
-    nSynchedMotors = synchAB;
+    turnRadiansClockwise(-PI/2);
+    nSyncedMotors = synchAB;
     nSyncedTurnRatio = 100;
     motor[motorA] = 5;
-    while( SensorValue(sonar) > 21)
+    while( SensorValue(sonar) > 21 - sonarOffset)
       ;
     motor[motorA] = 0;
-    turnRadiansClockwise(-PI/2);
+    turnRadiansClockwise(PI/2);
   }
 
 }
@@ -214,63 +221,64 @@ void chamberAdjust()
 void beep()
 {
   //beep when done.
-  PlayImmediateTone(780, 100)
+  PlayImmediateTone(780, 100);
 }
 
 task main()
 {
-  getIntoCorridor();
+	//getIntoCorridor();
 
-  int currentWaypoint = calculateCurrentWaypoint();
+	int currentWaypoint = calculateCurrentWaypoint();
+	nxtDisplayCenteredTextLine(3, "WP: %d", currentWaypoint);
+  wait1Msec(3000);
 
-  if(currentWaypoint == 1)
-  {
-    first = 2;
-    second = 3;
-    third = 1;
-  }
-  else if(currentWaypoint == 2)
-  {
-    first = 3;
-    second = 1;
-    third = 2;
-  }
-  else //currentWaypoint == 3
-  {
-    first = 2;
-    second = 1;
-    third = 3;
-  }
+	if(currentWaypoint == 1)
+	{
+		first = 2;
+		second = 3;
+		third = 1;
+	}
+	else if(currentWaypoint == 2)
+	{
+		first = 3;
+		second = 1;
+		third = 2;
+	}
+	else //currentWaypoint == 3
+	{
+		first = 2;
+		second = 1;
+		third = 3;
+	}
 
-  /* First */
-  corridorTurn(currentWaypoint, first);
-  downCorridor(first);
-  turnToWaypoint(currentWaypoint, first);
-  driveToBackWall();
-  chamberAdjust();
-  beep();
-  /* End First */
+	/* First */
+	corridorTurn(currentWaypoint, first);/*
+	downCorridor(first);
+	turnToWaypoint(currentWaypoint, first);
+	driveToBackWall();
+	chamberAdjust();
+	beep();*/
+	/* End First */
 
-  /* Second */
-  currentWaypoint = first;
-  getIntoCorridor();
-  corridorTurn(currentWaypoint, second);
-  downCorridor(second);
-  turnToWaypoint(currentWaypoint, second);
-  driveToBackWall();
-  chamberAdjust();
-  beep();
-  /* End Second */
+	/* Second */
+	/*currentWaypoint = first;
+	getIntoCorridor();
+	corridorTurn(currentWaypoint, second);
+	downCorridor(second);
+	turnToWaypoint(currentWaypoint, second);
+	driveToBackWall();
+	*/ /*chamberAdjust();
+	beep();*/
+	/* End Second */
 
-  /* Third */
-  currentWaypoint = second;
-  getIntoCorridor();
-  corridorTurn(currentWaypoint, third);
-  downCorridor(third);
-  turnToWaypoint(currentWaypoint, third);
-  driveToBackWall();
-  chamberAdjust();
-  beep();
-  /* End Third */
-
+	/* Third */
+	/*currentWaypoint = second;
+	getIntoCorridor();
+	corridorTurn(currentWaypoint, third);
+	downCorridor(third);
+	turnToWaypoint(currentWaypoint, third);
+	driveToBackWall();
+	chamberAdjust();
+	beep();*/
+	/* End Third */
 }
