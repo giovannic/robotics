@@ -38,8 +38,15 @@ void getIntoCorridor()
       boundary++;
   }
 
+  nxtDisplayCenteredTextLine(1, "ArrElt: %d", result);
+	wait1Msec(1000);
+
   //Rotate so that you face that way.
   float turnAngle = (result / 180.0)*PI;
+
+  nxtDisplayCenteredTextLine(2, "TurnAngle: %f", turnAngle);
+	wait1Msec(1000);
+
   turnRadiansClockwise(-turnAngle);
 
   nSyncedMotors = synchAB;
@@ -66,7 +73,7 @@ int calculateCurrentWaypoint()
   motor[motorC] = -20;
   while(nMotorEncoder[motorC] > -90)
     ;
-  
+
   if (SensorValue[sonar] < 50)
   {
     //fix and return
@@ -82,7 +89,7 @@ int calculateCurrentWaypoint()
   motor[motorC] = 20;
   while(nMotorEncoder[motorC] < 90)
     ;
-  
+
   if (SensorValue[sonar] < 50)
   {
     waypoint = 2;
