@@ -69,10 +69,10 @@ void getIntoCorridor()
 
 int calculateCurrentWaypoint()
 {
+  nMotorEncoder[motorC] = 0;
   int waypoint = 0;
 
   //Turn the sonar right.
-  nMotorEncoder[motorC] = 0;
   motor[motorC] = -20;
   while(nMotorEncoder[motorC] > -90)
     ;
@@ -80,33 +80,32 @@ int calculateCurrentWaypoint()
   if (SensorValue[sonar] < 50)
   {
     //fix and return
-    nMotorEncoder[motorC] = 0;
     motor[motorC] = 20;
     while(nMotorEncoder[motorC] < 0)
       ;
     motor[motorC] = 0;
+    nMotorEncoder[motorC] = 0;
     return 1;
   }
 
   //Turn the sonar left.
-  nMotorEncoder[motorC] = 0;
   motor[motorC] = 20;
-  while(nMotorEncoder[motorC] > 90)
+  while(nMotorEncoder[motorC] < 90)
     ;
 
   if (SensorValue[sonar] < 50)
   {
-    waypoint = 2;
-  } else {
     waypoint = 3;
+  } else {
+    waypoint = 2;
   }
 
   //fix and return
-  nMotorEncoder[motorC] = 0;
   motor[motorC] = -20;
   while(nMotorEncoder[motorC] > 0)
     ;
   motor[motorC] = 0;
+  nMotorEncoder[motorC] = 0;
   return waypoint;
 }
 
@@ -118,23 +117,23 @@ void corridorTurn(int currentWaypoint, int destinationWaypoint)
   switch(currentWaypoint)
   {
     case 1:
-      a = -PI/2;
+      a = PI/2;
       break;
     case 2:
       switch(destinationWaypoint)
       {
         case 1:
-          a = PI/2;
+          a = -PI/2;
           break;
         case 3:
-          a = -PI/2;
+          a = PI/2;
           break;
       }
     case 3:
-      a = PI/2;
+      a = -PI/2;
       break;
   }
-  turnRadiansClockwise(-a);
+  turnRadiansClockwise(a);
 }
 
 void downCorridor(int dest)
@@ -159,7 +158,7 @@ void driveToBackWall()
 
   nSyncedMotors = synchAB;
   nSyncedTurnRatio = 100;
-  motor[motorA] = 10;
+  motor[motorA] = 30;
   while(SensorValue(sonar) > 21 - sonarOffset)
     ;
   motor[motorA] = 0;
