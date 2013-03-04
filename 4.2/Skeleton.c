@@ -74,6 +74,7 @@ int calculateCurrentWaypoint()
     motor[motorC] = 20;
     while(nMotorEncoder[motorC] < 0)
       ;  
+    motor[motorC] = 0;
     return 1;
   }
 
@@ -95,6 +96,7 @@ int calculateCurrentWaypoint()
   motor[motorC] = -20;
   while(nMotorEncoder[motorC] > 0)
     ;  
+  motor[motorC] = 0;
   return waypoint;
 }
 
