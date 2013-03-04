@@ -33,12 +33,29 @@ void getIntoCorridor()
 
 int calculateCurrentWaypoint()
 {
-	//Turn the sonar right.
-	//If reading < 50 you're at 1
-	//Turn it left.
-	//If reading < 50 you're at 3
-	//Else you're at 2#
-  return 0;
+
+  //Turn the sonar right.
+  nMotorEncoder[motorC] = 0;
+  motor[motorC] = -20;
+  while(nMotorEncoder[motorC] > -90)
+    ;
+  
+  if (SensorValue[sonar] < 50)
+  {
+     return 1;
+  }
+
+  //Turn the sonar left.
+  nMotorEncoder[motorC] = 0;
+  motor[motorC] = 20;
+  while(nMotorEncoder[motorC] > 180)
+    ;
+  
+  if (SensorValue[sonar] < 50)
+  {
+     return 2;
+  }
+  return 3;
 }
 
 void corridorTurn(int currentWaypoint, int destinationWaypoint)
