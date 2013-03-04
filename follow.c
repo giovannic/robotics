@@ -24,7 +24,7 @@ void follow_wall(int distance)
   motor[motorB] = drive_power;
 
   float lineStart = nMotorEncoder[motorA];
-  float  encoderLimit = ENC_P_CM*d;
+  float  encoderLimit = ENC_P_CM*distance;
 
   while((nMotorEncoder[motorA] - lineStart) < encoderLimit)
   {
@@ -57,7 +57,7 @@ task main()
   nMotorEncoder[motorC] = 0;
   motor[motorC] = -20;
   while(nMotorEncoder[motorC] > 0)
-    ;  
+    ;
   motor[motorC] = 0;
 
 }
