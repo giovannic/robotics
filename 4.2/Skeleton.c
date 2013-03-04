@@ -14,6 +14,11 @@ int third;
 
 int sonarOffset = 4;
 
+const float ENC_P_CM = 21.157;
+const int drive_power = 20;
+const int wall_distance = 20;
+const float damper = 0.25;
+
 /* Global to fix memory error. */
 loc_sig scan;
 
@@ -113,6 +118,11 @@ void corridorTurn(int currentWaypoint, int destinationWaypoint)
 {
   //Turn based on arguments.
   //Face sonar to the correct wall.
+
+  nxtDisplayCenteredTextLine(4, "from: %d", currentWaypoint);
+  nxtDisplayCenteredTextLine(5, "to: %d", destinationWaypoint);
+  wait1Msec(1000);
+
   float a = 0;
   switch(currentWaypoint)
   {
@@ -120,15 +130,8 @@ void corridorTurn(int currentWaypoint, int destinationWaypoint)
       a = PI/2;
       break;
     case 2:
-      switch(destinationWaypoint)
-      {
-        case 1:
-          a = -PI/2;
-          break;
-        case 3:
-          a = PI/2;
-          break;
-      }
+      a = (destinationWaypoint == 1) ? -PI/2 : PI/2;
+      break;
     case 3:
       a = -PI/2;
       break;
@@ -138,6 +141,105 @@ void corridorTurn(int currentWaypoint, int destinationWaypoint)
 
 void downCorridor(int from, int to)
 {
+
+  float distance = 252;
+  float step = 20;
+
+  float balance = 0;
+  nMotorPIDSpeedCtrl[motorA] = mtrSpeedReg;
+  nMotorPIDSpeedCtrl[motorB] = mtrSpeedReg;
+  float encoderLimit = ENC_P_CM*distance;
+
+  if(to == 2) //THIS ISNT RIGHT... NEED TO TURN SONAR ETC.
+  {
+      nMotorEncoder[motorA] = 0;
+		  while((nMotorEncoder[motorA]) < encoderLimit)
+		  {
+			    balance = damper*(SensorValue[S1] - wall_distance);
+			    motor[motorA] = drive_power - balance;
+			    motor[motorB] = drive_power + balance;
+		  }
+		  motor[motorA] = 0;
+		  motor[motorB] = 0;
+  }
+  else
+  {
+      int sonarReading = SensorValue(sonar);
+      while( sonarReading > (21 - sonarOffset) )
+      {
+         //Take sonar reading.
+
+            sonarReading = SensorValue(sonar);
+            nxtDisplayCenteredTextLine(6, "sonar: %d", sonarReading);
+
+
+
+         //Turn sonar to face wall.
+         if(to == 1)
+         {
+	           motor[motorC] = 10;
+	           nMotorEncoder[motorC] = 0;
+	           while(nMotorEncoder[motorC] < 90)
+	           {
+
+	           }
+	           motor[motorC] = 0;
+         }
+         else //to == 3
+         {
+	           motor[motorC] = -10;
+	           nMotorEncoder[motorC] = 0;
+	           while(nMotorEncoder[motorC] > -90)
+	           {
+
+	           }
+	           motor[motorC] = 0;
+         }
+
+         //Drive
+
+         sonarReading = SensorValue(sonar);
+         int driveDist = (step < sonarReading - (21 + sonarOffset)) ? step : sonarReading - 21;
+         encoderLimit = ENC_P_CM*driveDist;
+         nMotorEncoder[motorA] = 0;
+
+         while((nMotorEncoder[motorA]) < encoderLimit)
+		     {
+					   balance = damper*(SensorValue[S1] - wall_distance);
+					   motor[motorA] = drive_power - balance;
+					   motor[motorB] = drive_power + balance;
+					   wait1Msec(1000);
+		     }
+		     motor[motorA] = 0;
+		     motor[motorB] = 0;
+
+		     //Sonar forwards.
+
+		     //Turn sonar to face away from wall.
+         if(to == 1)
+         {
+	           motor[motorC] = -10;
+	           nMotorEncoder[motorC] = 0;
+	           while(nMotorEncoder[motorC] > -90)
+	           {
+
+	           }
+	           motor[motorC] = 0;
+         }
+         else //to == 3
+         {
+	           motor[motorC] = 10;
+	           nMotorEncoder[motorC] = 0;
+	           while(nMotorEncoder[motorC] < 90)
+	           {
+
+	           }
+	           motor[motorC] = 0;
+         }
+         sonarReading = SensorValue(sonar);
+
+      }
+  }
   //If the destination is waypoint 2 we need to train the odometry to drive
   //the correct distance whilst wall following.
 
@@ -274,12 +376,13 @@ task main()
 	}
 
 	/* First */
-	corridorTurn(currentWaypoint, first);/*
+	corridorTurn(currentWaypoint, first);
+	wait1Msec(5000);
 	downCorridor(currentWaypoint, first);
 	turnToWaypoint(currentWaypoint, first);
 	driveToBackWall();
 	chamberAdjust();
-	beep();*/
+	beep();
 	/* End First */
 
 	/* Second */
