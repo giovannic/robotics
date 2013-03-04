@@ -62,6 +62,27 @@ void corridorTurn(int currentWaypoint, int destinationWaypoint)
 {
 	//Turn based on arguments.
 	//Face sonar to the correct wall.
+	float a = 0;
+	switch(currentWaypoint)
+	{
+	  case 1:
+	    a = -PI/2;
+	    break;
+	  case 2:
+	    switch(destinationWaypoint)
+	    {
+	      case 1:
+		a = PI/2;
+                break;
+              case 3:
+                a = -PI/2;
+		break;
+	    }
+	  case 3:
+	    a = PI/2;
+	    break;
+	}
+	turnRadiansClockwise(a);
 }
 
 void downCorridor(int dest)
