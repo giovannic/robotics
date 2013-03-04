@@ -89,7 +89,7 @@ int calculateCurrentWaypoint()
   //Turn the sonar left.
   nMotorEncoder[motorC] = 0;
   motor[motorC] = 20;
-  while(nMotorEncoder[motorC] < 90)
+  while(nMotorEncoder[motorC] > 90)
     ;
 
   if (SensorValue[sonar] < 50)
@@ -132,7 +132,7 @@ void corridorTurn(int currentWaypoint, int destinationWaypoint)
       a = PI/2;
       break;
   }
-  turnRadiansClockwise(a);
+  turnRadiansClockwise(-a);
 }
 
 void downCorridor(int dest)
