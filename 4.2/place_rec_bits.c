@@ -10,7 +10,7 @@
 #define NO_BINS 360
 
 /// Number of locations we want to learn in the environment
-#define NO_LOCS 5
+#define NO_LOCS 3
 
 /// The size of the data that is going to be written to files
 int nFileSize	= NO_BINS * 2;
@@ -20,12 +20,17 @@ string file_names[NO_LOCS];
 
 float scanMotorSpeed = 2;
 
+float learnAngle = PI;
+
+
 /// The location signature structure: stores the signature characterizing one location
 typedef struct
 {
 	short sig[NO_BINS];
 } loc_sig;
 
+loc_sig ls_obs;
+loc_sig ls_read;
 
 
 // --------------------- File management functions ---------------
@@ -182,7 +187,10 @@ void learn_location()
 	write_signature_to_file(ls, index);
 }
 
-
+float getAngle(int shift)
+{
+  return learnAngle + shift * PI/180;
+}
 
 /** This function tries to recognize the current location.
     1. Characterize current location
@@ -194,38 +202,45 @@ void learn_location()
     4. Display the index of the recognized location on the screen */
 void recognize_location()
 {
-  loc_sig ls_obs;
+
   characterise_location(ls_obs);
 
   int min = -1;
   int bestLoc = -1;
+  int bestShift = -1;
   int accDiffs = 0;
 
-
-  for ( short n=0; n<NO_LOCS; n++ )
+  for ( short n=0; n < NO_LOCS; n++ )
     {
-      loc_sig ls_read;
+
       read_signature_from_file(ls_read, n);
 
-      // FILL IN: COMPARE ls_read with ls_obs and find the best match
-      for (int i = 0; i < NO_BINS; ++i)
+      for (int shift = 0; shift < NO_BINS; ++shift)
       {
-        int k = ls_obs.sig[i] - ls_read.sig[i];
-        accDiffs += k*k;
-      }
+        for (int deg = 0; deg < NO_BINS; ++deg)
+        {
+	        int diff = ls_obs.sig[deg] - ls_read.sig[(deg + shift) % NO_BINS];
+	        accDiffs += diff*diff;
+        }
 
-      if (min == -1 || accDiffs < min)
-      {
-        min = accDiffs;
-        bestLoc = n;
-      }
+	      if (min == -1 || accDiffs < min)
+	      {
+	        min = accDiffs;
+	        bestLoc = n;
+	        bestShift = shift;
+	      }
 
-      //reset accumulator
-      accDiffs = 0;
+	      //reset accumulator
+	      accDiffs = 0;
+
+      }
     }
+
+    float theta = getAngle(bestShift);
 
   // Display output
   nxtDisplayCenteredTextLine(1, "Location: %d", bestLoc + 1);
+  nxtDisplayCenteredTextLine(2, "Angle: %f", theta);
 }
 
 
@@ -241,6 +256,7 @@ void recognize_location()
     while loop is just for the display to hold on. */
 task main()
 {
+
   form_file_names();
   delete_loc_files();
 
@@ -250,8 +266,6 @@ task main()
       ;
     learn_location();
   }
-
-
 
   while (true)
   {
