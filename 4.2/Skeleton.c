@@ -19,6 +19,7 @@ const int drive_power = 20;
 const int wall_distance = 20;
 const float damper = 0.25;
 
+
 /* Global to fix memory error. */
 loc_sig scan;
 
@@ -139,113 +140,142 @@ void corridorTurn(int currentWaypoint, int destinationWaypoint)
   turnRadiansClockwise(a);
 }
 
-void downCorridor(int from, int to)
+void sonarTo(int degrees)
 {
+  degrees = - degrees;
+  const int speed = 20;
+  int difference = nMotorEncoder[motorC] - degrees;
 
-  float distance = 252;
-  float step = 20;
+  if (difference < 0)
+  {
+    motor[motorC] = speed;
+    while(nMotorEncoder[motorC] < degrees)
+      ;
+  } else {
+    motor[motorC] = -speed;
+    while(nMotorEncoder[motorC] > degrees)
+      ;
+  }
+  wait1Msec(500);
+  motor[motorC] = 0;
+}
 
-  float balance = 0;
+void follow_wall(int distance)
+{
+  int balance = 0;
+  int reading = 0;
+
+  const int wall_follow_distance = 20;
+  const float damper = 0.75;
+  const int drive_power = 50;
+  const int base = 7;
+
   nMotorPIDSpeedCtrl[motorA] = mtrSpeedReg;
   nMotorPIDSpeedCtrl[motorB] = mtrSpeedReg;
+  motor[motorA] = drive_power;
+  motor[motorB] = drive_power;
+
+  float lineStart = nMotorEncoder[motorA];
   float encoderLimit = ENC_P_CM*distance;
 
-  if(to == 2) //THIS ISNT RIGHT... NEED TO TURN SONAR ETC.
+  while((nMotorEncoder[motorA] - lineStart) < encoderLimit/2)
   {
-      nMotorEncoder[motorA] = 0;
-		  while((nMotorEncoder[motorA]) < encoderLimit)
-		  {
-			    balance = damper*(SensorValue[S1] - wall_distance);
-			    motor[motorA] = drive_power - balance;
-			    motor[motorB] = drive_power + balance;
-		  }
-		  motor[motorA] = 0;
-		  motor[motorB] = 0;
-  }
-  else
-  {
-      int sonarReading = SensorValue(sonar);
-      while( sonarReading > (21 - sonarOffset) )
+    reading = SensorValue[S1];
+    if(reading < 100)
+    {
+      balance = damper*(SensorValue[S1] - wall_follow_distance);
+    } else {
+      if (balance < 0)
       {
-         //Take sonar reading.
-
-            sonarReading = SensorValue(sonar);
-            nxtDisplayCenteredTextLine(6, "sonar: %d", sonarReading);
-
-
-
-         //Turn sonar to face wall.
-         if(to == 1)
-         {
-	           motor[motorC] = 10;
-	           nMotorEncoder[motorC] = 0;
-	           while(nMotorEncoder[motorC] < 90)
-	           {
-
-	           }
-	           motor[motorC] = 0;
-         }
-         else //to == 3
-         {
-	           motor[motorC] = -10;
-	           nMotorEncoder[motorC] = 0;
-	           while(nMotorEncoder[motorC] > -90)
-	           {
-
-	           }
-	           motor[motorC] = 0;
-         }
-
-         //Drive
-
-         sonarReading = SensorValue(sonar);
-         int driveDist = (step < sonarReading - (21 + sonarOffset)) ? step : sonarReading - 21;
-         encoderLimit = ENC_P_CM*driveDist;
-         nMotorEncoder[motorA] = 0;
-
-         while((nMotorEncoder[motorA]) < encoderLimit)
-		     {
-					   balance = damper*(SensorValue[S1] - wall_distance);
-					   motor[motorA] = drive_power - balance;
-					   motor[motorB] = drive_power + balance;
-					   wait1Msec(1000);
-		     }
-		     motor[motorA] = 0;
-		     motor[motorB] = 0;
-
-		     //Sonar forwards.
-
-		     //Turn sonar to face away from wall.
-         if(to == 1)
-         {
-	           motor[motorC] = -10;
-	           nMotorEncoder[motorC] = 0;
-	           while(nMotorEncoder[motorC] > -90)
-	           {
-
-	           }
-	           motor[motorC] = 0;
-         }
-         else //to == 3
-         {
-	           motor[motorC] = 10;
-	           nMotorEncoder[motorC] = 0;
-	           while(nMotorEncoder[motorC] < 90)
-	           {
-
-	           }
-	           motor[motorC] = 0;
-         }
-         sonarReading = SensorValue(sonar);
-
+        balance = -base;
+      } else {
+        balance = base;
       }
+    }
+    motor[motorA] = drive_power - balance;
+    motor[motorB] = drive_power + balance;
   }
+  motor[motorA] = 0;
+  motor[motorB] = 0;
+}
+
+void follow_outer_wall()
+{
+  const int step = 100;
+  const int drive_power = 20;
+  int reading;
+
+  //redundant
+  sonarTo(0);
+  reading = SensorValue[S1];
+  nxtDisplayCenteredTextLine(1, "back wall: %d", reading);
+  while(reading > 21 + step)
+  {
+    sonarTo(-90);
+
+    follow_wall(step);
+    sonarTo(0);
+    reading = SensorValue[S1];
+    nxtDisplayCenteredTextLine(1, "back wall: %d", reading);
+  }
+
+  motor[motorA] = drive_power;
+  motor[motorB] = drive_power;
+
+  while(SensorValue[S1] > 21)
+    ;
+
+  motor[motorA] = 0;
+  motor[motorB] = 0;
+
+}
+
+void follow_inner_wall()
+{
+  int balance = 0;
+  int reading = 0;
+
+  const int wall_follow_distance = 20;
+  const float damper = 0.75;
+  const int drive_power = 50;
+  const int base = 7;
+
+  nMotorPIDSpeedCtrl[motorA] = mtrSpeedReg;
+  nMotorPIDSpeedCtrl[motorB] = mtrSpeedReg;
+  motor[motorA] = drive_power;
+  motor[motorB] = drive_power;
+
+  while(true)
+  {
+    reading = SensorValue[S1];
+    if(reading < 100)
+    {
+      balance = damper*(SensorValue[S1] - wall_follow_distance);
+    } else {
+      if (balance < 0)
+      {
+        balance = -base;
+      } else {
+        balance = base;
+      }
+    }
+    motor[motorA] = drive_power - balance;
+    motor[motorB] = drive_power + balance;
+  }
+  //CONDITION AND STOP
+}
+
+void downCorridor(int from, int to)
+{
   //If the destination is waypoint 2 we need to train the odometry to drive
   //the correct distance whilst wall following.
 
   //Otherwise we need to wall follow and occasionaly shoot the sonar forwards
   //to gauage our depth from the wall infront. We want to stop at 21 from the
   //wall.
+
+  if (from == 3)
+    follow_outer_wall();
 }
 
 void turnToWaypoint(int previous, int dest)
@@ -350,6 +380,7 @@ void beep()
 
 task main()
 {
+
 	getIntoCorridor();
 
 	int currentWaypoint = calculateCurrentWaypoint();
@@ -370,8 +401,8 @@ task main()
 	}
 	else //currentWaypoint == 3
 	{
-		first = 2;
-		second = 1;
+		first = 1;
+		second = 2;
 		third = 3;
 	}
 

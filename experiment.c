@@ -108,7 +108,7 @@ void driveToBackWall()
   motor[motorA] = 0;
 
 }
-/*
+
 void chamberAdjust()
 {
   //Sonar look left + take reading.
@@ -160,7 +160,6 @@ void chamberAdjust()
   }
 
 }
-*/
 
 void beep()
 {
