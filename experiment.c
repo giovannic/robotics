@@ -10,8 +10,8 @@ int sonarOffset = 4;
 const float ENC_P_CM = 21.157;
 const int drive_power = 30;
 bool extend = false;
-const int distance = 300; 
-const int extention = 300;
+const int distance = 300;
+const int extension = 300;
 
 void turnOut()
 {
@@ -22,7 +22,7 @@ void turnOut()
   nSyncedTurnRatio = -100;
   motor[motorA] = drive_power;
 
-  while(abs((SonarValue[sonar] - sonarOffset) - originWallDistance) > boundary)
+  while(abs((SensorValue[sonar] - sonarOffset) - originWallDistance) > boundary)
     ;
 
   motor[motorA] = 0;
@@ -61,7 +61,7 @@ void follow_wall()
 
   while((nMotorEncoder[motorA] - lineStart) < encoderLimit/2)
   {
-    balance = damper*(SensorValue[S1] - wall_distance);
+    balance = damper*(SensorValue[S1] - wall_follow_distance);
     if (balance > 0)
     {
       motor[motorA] = drive_power;
@@ -82,7 +82,7 @@ void follow_wall()
 
   while((nMotorEncoder[motorA] - lineStart) < encoderLimit)
   {
-    balance = damper*(SensorValue[S1] - wall_distance);
+    balance = damper*(SensorValue[S1] - wall_follow_distance);
     if (balance > 0)
     {
       motor[motorA] = drive_power;
@@ -108,7 +108,7 @@ void driveToBackWall()
   motor[motorA] = 0;
 
 }
-
+/*
 void chamberAdjust()
 {
   //Sonar look left + take reading.
@@ -160,6 +160,7 @@ void chamberAdjust()
   }
 
 }
+*/
 
 void beep()
 {
@@ -176,16 +177,16 @@ task main()
   nMotorEncoder[motorC] = 0;
 
   turnOut();
-  followWall();
+  follow_wall();
   //chamberAdjust();
 
   extend = true;
 
   turnOut();
-  followWall();
+  follow_wall();
   //chamberAdjust();
 
   turnOut();
-  followWall();
+  follow_wall();
   //chamberAdjust();
 }
