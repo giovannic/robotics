@@ -13,20 +13,19 @@ typedef struct
 	short sig[NO_BINS];
 } loc_sig;
 
+/*
 void resetSonar()
 {
-	nMotorEncoder[motorC] = 0;
 	motor[motorC] = -20;
 	while(nMotorEncoder[motorC] > -360)
-	{
-
-	}
+	  ;
 	motor[motorC] = 0;
 }
+*/
+/*
 
 void circularScan(loc_sig& signature)
 {
-	nMotorEncoder[motorC] = 0;
 	float end = 360;
 
 	motor[motorC] = scanMotorSpeed;
@@ -41,6 +40,27 @@ void circularScan(loc_sig& signature)
 	}
 
 	resetSonar();
+
+	PlayTone(523,40);
+}
+*/
+void circularScan(loc_sig& signature)
+{
+  nSyncedMotors = synchAB;
+  nSyncedTurnRatio = -100;
+  float rotStart = nMotorEncoder[motorA];
+	float rotLimit = 800;
+
+	motor[motorA] = 20;
+
+	while(nMotorEncoder[motorA] - rotStart < rotLimit)
+	{
+		int value = (nMotorEncoder[motorA]/800) * 360;
+		if (value < 360)
+		{
+			signature.sig[value] = SensorValue(sonar);
+		}
+	}
 
 	PlayTone(523,40);
 }

@@ -1,5 +1,5 @@
 #pragma config(Sensor, S1,     sonar,               sensorSONAR)
-#pragma config(Sensor, S2,     bump,                sensorTouch)
+#pragma config(Sensor, S2,     light,               sensorLightActive)
 #pragma config(Motor,  motorA,          left,          tmotorNormal, PIDControl, encoder)
 #pragma config(Motor,  motorB,          right,         tmotorNormal, PIDControl, encoder)
 #pragma config(Motor,  motorC,          sonarMotor,    tmotorNormal, PIDControl, encoder)
@@ -15,35 +15,69 @@ int third;
 int sonarOffset = 4;
 
 const float ENC_P_CM = 21.157;
-const int drive_power = 20;
-const int wall_distance = 20;
-const float damper = 0.25;
-
 
 /* Global to fix memory error. */
 loc_sig scan;
 
+void sonarTo(int degrees)
+{
+  degrees = - degrees;
+  const int speed = 20;
+  int difference = nMotorEncoder[motorC] - degrees;
+
+  if (difference < 0)
+  {
+    motor[motorC] = speed;
+    while(nMotorEncoder[motorC] < degrees)
+      ;
+  } else {
+    motor[motorC] = -speed;
+    while(nMotorEncoder[motorC] > degrees)
+      ;
+  }
+  motor[motorC] = 0;
+  wait1Msec(500);
+
+}
+
+void turnOut()
+{
+  int boundary = 2;
+  int originWallDistance = 55;
+  const int drive_power = 20;
+
+  nSyncedMotors = synchAB;
+  nSyncedTurnRatio = -100;
+  motor[motorA] = drive_power;
+
+  while(abs(SensorValue[sonar] - originWallDistance) > boundary)
+    ;
+
+  motor[motorA] = 0;
+}
+
+
 void getIntoCorridor()
 {
+  /*
+  const int distanceToWall = 55;
 
+  int result = -1;
+  int bestDifference = -1;
+  int currentDifference = 0;
   //Scan 360 and work out which array element is the largest sonar reading.
 
   //Make this so it rotates the robot!
   circularScan(scan);
 
-  int result = -1;
-  int boundary = 0;
-
-  while(result == -1)
+  for(int i = 0 ; i < NO_BINS ; i++)
   {
-    for(int i = 0 ; i < NO_BINS ; i++)
+    currentDifference = abs(scan.sig[i] - sonarOffset - distanceToWall);
+    if((currentDifference < bestDifference) || bestDifference == -1)
     {
-      if(scan.sig[i] == (63 - sonarOffset + boundary) || scan.sig[i] == (63 - sonarOffset - boundary))
-      {
-        result = i;
-      }
+      result = i;
+      bestDifference = currentDifference;
     }
-    boundary++;
   }
 
   nxtDisplayCenteredTextLine(1, "ArrElt: %d", result);
@@ -56,15 +90,15 @@ void getIntoCorridor()
   wait1Msec(1000);
 
   turnRadiansClockwise(turnAngle); //minus removed
-
+*/
+  turnOut();
+  wait1Msec(1000);
   nSyncedMotors = synchAB;
   nSyncedTurnRatio = 100;
   motor[motorA] = 30;
 
   while(SensorValue[sonar] > 21 - sonarOffset)
-  {
-
-  }
+    ;
 
   motor[motorA] = 0;
 
@@ -75,29 +109,20 @@ void getIntoCorridor()
 
 int calculateCurrentWaypoint()
 {
-  nMotorEncoder[motorC] = 0;
   int waypoint = 0;
 
   //Turn the sonar right.
-  motor[motorC] = -20;
-  while(nMotorEncoder[motorC] > -90)
-    ;
+  sonarTo(90);
 
   if (SensorValue[sonar] < 50)
   {
     //fix and return
-    motor[motorC] = 20;
-    while(nMotorEncoder[motorC] < 0)
-      ;
-    motor[motorC] = 0;
-    nMotorEncoder[motorC] = 0;
+    sonarTo(0);
     return 1;
   }
 
   //Turn the sonar left.
-  motor[motorC] = 20;
-  while(nMotorEncoder[motorC] < 90)
-    ;
+  sonarTo(-90);
 
   if (SensorValue[sonar] < 50)
   {
@@ -107,11 +132,7 @@ int calculateCurrentWaypoint()
   }
 
   //fix and return
-  motor[motorC] = -20;
-  while(nMotorEncoder[motorC] > 0)
-    ;
-  motor[motorC] = 0;
-  nMotorEncoder[motorC] = 0;
+  sonarTo(0);
   return waypoint;
 }
 
@@ -140,33 +161,13 @@ void corridorTurn(int currentWaypoint, int destinationWaypoint)
   turnRadiansClockwise(a);
 }
 
-void sonarTo(int degrees)
-{
-  degrees = - degrees;
-  const int speed = 20;
-  int difference = nMotorEncoder[motorC] - degrees;
-
-  if (difference < 0)
-  {
-    motor[motorC] = speed;
-    while(nMotorEncoder[motorC] < degrees)
-      ;
-  } else {
-    motor[motorC] = -speed;
-    while(nMotorEncoder[motorC] > degrees)
-      ;
-  }
-  wait1Msec(500);
-  motor[motorC] = 0;
-}
-
-void follow_wall(int distance)
+void follow_outer_wall()
 {
   int balance = 0;
   int reading = 0;
 
   const int wall_follow_distance = 20;
-  const float damper = 0.75;
+  const float damper = 3;
   const int drive_power = 50;
   const int base = 7;
 
@@ -175,10 +176,7 @@ void follow_wall(int distance)
   motor[motorA] = drive_power;
   motor[motorB] = drive_power;
 
-  float lineStart = nMotorEncoder[motorA];
-  float encoderLimit = ENC_P_CM*distance;
-
-  while((nMotorEncoder[motorA] - lineStart) < encoderLimit/2)
+  while(SensorValue[S2] < 30)
   {
     reading = SensorValue[S1];
     if(reading < 100)
@@ -195,38 +193,6 @@ void follow_wall(int distance)
     motor[motorA] = drive_power - balance;
     motor[motorB] = drive_power + balance;
   }
-  motor[motorA] = 0;
-  motor[motorB] = 0;
-}
-
-void follow_outer_wall()
-{
-  const int step = 100;
-  const int drive_power = 20;
-  int reading;
-
-  //redundant
-  sonarTo(0);
-  reading = SensorValue[S1];
-  nxtDisplayCenteredTextLine(1, "back wall: %d", reading);
-  while(reading > 21 + step)
-  {
-    sonarTo(-90);
-
-    follow_wall(step);
-    sonarTo(0);
-    reading = SensorValue[S1];
-    nxtDisplayCenteredTextLine(1, "back wall: %d", reading);
-  }
-
-  motor[motorA] = drive_power;
-  motor[motorB] = drive_power;
-
-  while(SensorValue[S1] > 21)
-    ;
-
-  motor[motorA] = 0;
-  motor[motorB] = 0;
 
 }
 
@@ -236,7 +202,7 @@ void follow_inner_wall()
   int reading = 0;
 
   const int wall_follow_distance = 20;
-  const float damper = 0.75;
+  const float damper = 3;
   const int drive_power = 50;
   const int base = 7;
 
@@ -245,7 +211,9 @@ void follow_inner_wall()
   motor[motorA] = drive_power;
   motor[motorB] = drive_power;
 
-  while(true)
+  wait1Msec(1000);
+
+  while(SensorValue[S1] > 60)
   {
     reading = SensorValue[S1];
     if(reading < 100)
@@ -262,7 +230,11 @@ void follow_inner_wall()
     motor[motorA] = drive_power - balance;
     motor[motorB] = drive_power + balance;
   }
-  //CONDITION AND STOP
+
+  wait1Msec(500);
+
+  motor[motorA] = 0;
+  motor[motorB] = 0;
 }
 
 void downCorridor(int from, int to)
@@ -274,15 +246,31 @@ void downCorridor(int from, int to)
   //to gauage our depth from the wall infront. We want to stop at 21 from the
   //wall.
 
-  if (from == 3)
-    follow_outer_wall();
+  switch(from)
+  {
+    case 1:
+      sonarTo(-90);
+      //follow_inner_wall();
+      sonarTo(0);
+      break;
+    case 2:
+      sonarTo(90);
+      //follow_outer_wall();
+      sonarTo(0);
+      break;
+    case 3:
+      sonarTo(-90);
+      follow_outer_wall();
+      sonarTo(0);
+      break;
+  }
 }
 
 void turnToWaypoint(int previous, int dest)
 {
   //Rotate to face the waypoint, for 1 and 3 this is dependent only on the
   //destination whereas for waypoint 2 we need to know where we came from.
-    //Turn based on arguments.
+  //Turn based on arguments.
   //Face sonar to the correct wall.
   float a = 0;
   switch(dest)
@@ -323,29 +311,19 @@ void driveToBackWall()
 void chamberAdjust()
 {
   //Sonar look left + take reading.
-  nMotorEncoder[motorC] = 0;
-  motor[motorC] = 5;
-  while(nMotorEncoder[motorC] < 90)
-    ;
-  motor[motorC] = 0;
+  sonarTo(90);
   int leftReading = SensorValue(sonar);
   nxtDisplayCenteredTextLine(1, "LR: %d", leftReading);
 
   //Sonar look right + take reading.
-  motor[motorC] = -5;
-  while(nMotorEncoder[motorC] > -90)
-    ;
-  motor[motorC] = 0;
+  sonarTo(-90);
   int rightReading = SensorValue(sonar);
   nxtDisplayCenteredTextLine(2, "RR: %d", rightReading);
 
 
-  wait1Msec(5000);
+  wait1Msec(1000);
   //Recenter sonar
-  motor[motorC] = 5;
-  while(nMotorEncoder[motorC] < 0)
-    ;
-  motor[motorC] = 0;
+  sonarTo(0);
   //Adjust the position of the robot so that the left reading = right reading.
   if(leftReading > rightReading)
   {
@@ -353,7 +331,7 @@ void chamberAdjust()
     nSyncedMotors = synchAB;
     nSyncedTurnRatio = 100;
     motor[motorA] = 5;
-    while( SensorValue(sonar) > 21 - sonarOffset)
+    while(SensorValue(sonar) > 21 - sonarOffset)
       ;
     motor[motorA] = 0;
     turnRadiansClockwise(-PI/2);
@@ -380,6 +358,8 @@ void beep()
 
 task main()
 {
+
+  nMotorEncoder[motorC] = 0;
 
 	getIntoCorridor();
 
@@ -408,33 +388,34 @@ task main()
 
 	/* First */
 	corridorTurn(currentWaypoint, first);
-	wait1Msec(5000);
 	downCorridor(currentWaypoint, first);
 	turnToWaypoint(currentWaypoint, first);
 	driveToBackWall();
 	chamberAdjust();
 	beep();
+
 	/* End First */
 
 	/* Second */
-	/*currentWaypoint = first;
+	currentWaypoint = first;
 	getIntoCorridor();
 	corridorTurn(currentWaypoint, second);
 	downCorridor(currentWaypoint, second);
 	turnToWaypoint(currentWaypoint, second);
 	driveToBackWall();
-	*/ /*chamberAdjust();
-	beep();*/
+	chamberAdjust();
+	beep();
+
 	/* End Second */
 
 	/* Third */
-	/*currentWaypoint = second;
+	currentWaypoint = second;
 	getIntoCorridor();
 	corridorTurn(currentWaypoint, third);
 	downCorridor(currentWaypoint, third);
 	turnToWaypoint(currentWaypoint, third);
 	driveToBackWall();
 	chamberAdjust();
-	beep();*/
+	beep();
 	/* End Third */
 }

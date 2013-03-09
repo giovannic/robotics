@@ -1,5 +1,5 @@
 #pragma config(Sensor, S1,     sonar,               sensorSONAR)
-#pragma config(Sensor, S2,     bump,                sensorTouch)
+#pragma config(Sensor, S2,     light,               sensorLightActive)
 #pragma config(Motor,  motorA,          left,          tmotorNormal, PIDControl, encoder)
 #pragma config(Motor,  motorB,          right,         tmotorNormal, PIDControl, encoder)
 #pragma config(Motor,  motorC,          sonarMotor,    tmotorNormal, PIDControl, encoder)
@@ -11,90 +11,79 @@ const float ENC_P_CM = 21.157;
 const int drive_power = 30;
 bool extend = false;
 const int distance = 300;
-const int extension = 300;
 
 void turnOut()
 {
-  int boundary = 0;
-  int originWallDistance = 63;
+  int boundary = 1;
+  int originWallDistance = 55;
 
   nSyncedMotors = synchAB;
   nSyncedTurnRatio = -100;
   motor[motorA] = drive_power;
 
-  while(abs((SensorValue[sonar] - sonarOffset) - originWallDistance) > boundary)
+  while(abs(SensorValue[sonar] - originWallDistance) > boundary)
     ;
 
   motor[motorA] = 0;
 }
 
-void sonarForward()
+void sonarTo(int degrees)
 {
-  motor[motorC] = 20;
-  while(nMotorEncoder[motorC] < 90)
-    ;
-  motor[motorC] = 0;
-}
+  degrees = - degrees;
+  const int speed = 20;
+  int difference = nMotorEncoder[motorC] - degrees;
 
-void sonarLeft()
-{
-  motor[motorC] = -20;
-  while(nMotorEncoder[motorC] > 0)
-    ;
+  if (difference < 0)
+  {
+    motor[motorC] = speed;
+    while(nMotorEncoder[motorC] < degrees)
+      ;
+  } else {
+    motor[motorC] = -speed;
+    while(nMotorEncoder[motorC] > degrees)
+      ;
+  }
   motor[motorC] = 0;
 }
 
 void follow_wall()
 {
-  sonarLeft();
+  sonarTo(-90);
+  int balance = 0;
+  int reading = 0;
+
   const int wall_follow_distance = 20;
-  const float damper = 0.5;
-  float balance = 0;
+  const float damper = 1.25;
+  const int drive_power = 30;
+  const int base = drive_power/10;
 
   nMotorPIDSpeedCtrl[motorA] = mtrSpeedReg;
   nMotorPIDSpeedCtrl[motorB] = mtrSpeedReg;
   motor[motorA] = drive_power;
   motor[motorB] = drive_power;
 
-  float lineStart = nMotorEncoder[motorA];
-  float encoderLimit = ENC_P_CM*distance;
-
-  while((nMotorEncoder[motorA] - lineStart) < encoderLimit/2)
+  while(SensorValue[S2] < 30)
   {
-    balance = damper*(SensorValue[S1] - wall_follow_distance);
-    if (balance > 0)
+    reading = SensorValue[S1];
+    if(reading < 100)
     {
-      motor[motorA] = drive_power;
-      motor[motorB] = drive_power + balance;
+      balance = damper*(SensorValue[S1] - wall_follow_distance);
     } else {
-      motor[motorA] = drive_power - balance;
-      motor[motorB] = drive_power;
+      if (balance < 0)
+      {
+        balance = -base;
+      } else {
+        balance = base;
+      }
     }
+    nxtDisplayCenteredTextLine(1, "bal: %d", balance);
+    motor[motorA] = drive_power - balance;
+    motor[motorB] = drive_power + balance;
   }
+  sonarTo(0);
 
-  /*check for an extended ride*/
-  sonarForward();
-  if (SensorValue[sonar] > 100 && extend)
-  {
-    encoderLimit += extension;
-  }
-  sonarLeft();
-
-  while((nMotorEncoder[motorA] - lineStart) < encoderLimit)
-  {
-    balance = damper*(SensorValue[S1] - wall_follow_distance);
-    if (balance > 0)
-    {
-      motor[motorA] = drive_power;
-      motor[motorB] = drive_power + balance;
-    } else {
-      motor[motorA] = drive_power - balance;
-      motor[motorB] = drive_power;
-    }
-  }
-
-  sonarForward();
 }
+
 
 void driveToBackWall()
 {
@@ -108,7 +97,7 @@ void driveToBackWall()
   motor[motorA] = 0;
 
 }
-
+/*
 void chamberAdjust()
 {
   //Sonar look left + take reading.
@@ -160,7 +149,7 @@ void chamberAdjust()
   }
 
 }
-
+*/
 void beep()
 {
   //beep when done.
@@ -179,8 +168,7 @@ task main()
   follow_wall();
   //chamberAdjust();
 
-  extend = true;
-
+  /*
   turnOut();
   follow_wall();
   //chamberAdjust();
@@ -188,4 +176,5 @@ task main()
   turnOut();
   follow_wall();
   //chamberAdjust();
+  */
 }
