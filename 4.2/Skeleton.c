@@ -101,10 +101,11 @@ void getIntoCorridor()
   turnRadiansClockwise(turnAngle); //minus removed
 */
   turnOut();
-  wait1Msec(1000);
+  wait1Msec(500);
   nSyncedMotors = synchAB;
   nSyncedTurnRatio = 100;
   motor[motorA] = 30;
+  //motor[motorA] = 70;
 
   while(SensorValue[sonar] > 21 - 2) //-sonarOffset
     ;
@@ -176,8 +177,8 @@ void follow_outer_wall(int from)
   int reading = 0;
 
   int wall_follow_distance = 20;
-  const float damper = 3;
-  const int drive_power = 50;
+  const float damper = 3; //3
+  const int drive_power = 50; //50
   const int base = 7;
 
   nMotorPIDSpeedCtrl[motorA] = mtrSpeedReg;
@@ -190,7 +191,7 @@ void follow_outer_wall(int from)
     //wall_follow_distance = SensorValue[S1];
   }
 
-  while(SensorValue[S2] < 30)
+  while(SensorValue[S2] < 30) //<30
   {
     reading = SensorValue[S1];
     if(reading < 100)
@@ -261,16 +262,16 @@ void follow_inner_wall()
   nMotorPIDSpeedCtrl[motorB] = mtrSpeedReg;
 
     nxtDisplayCenteredTextLine(1, "Aligned.");
-  wait1Msec(500);
+  //wait1Msec(500);
 
     nxtDisplayCenteredTextLine(1, "A: %d B: %d.", nMotorEncoder[motorA], nMotorEncoder[motorB]);
-  wait1Msec(500);
+  //wait1Msec(500);
 
   nMotorEncoder[motorA] = nMotorEncoder[motorA] - nMotorEncoder[motorA];
   nMotorEncoder[motorB] =   nMotorEncoder[motorB] -   nMotorEncoder[motorB];
 
       nxtDisplayCenteredTextLine(2, "A: %d B: %d.", nMotorEncoder[motorA], nMotorEncoder[motorB]);
-  wait1Msec(500);
+  //wait1Msec(500);
 
   motor[motorA] = drive_power;
   motor[motorB] = drive_power;
@@ -310,7 +311,7 @@ void follow_inner_wall()
     motor[motorA] = 0;
   motor[motorB] = 0;
   nxtDisplayCenteredTextLine(1, "End.");
-  wait1Msec(1000);
+  wait1Msec(500);
 
 
 }
@@ -401,18 +402,16 @@ void chamberAdjust()
   nxtDisplayCenteredTextLine(2, "LR: %d", leftReading);
 
 
-  wait1Msec(1000);
+  wait1Msec(500);
   //Recenter sonar
   sonarTo(0);
   //Adjust the position of the robot so that the left reading = right reading.
   if(leftReading > rightReading)
   {
-    nxtDisplayCenteredTextLine(6, "LEFT");
-    wait1Msec(1000);
     turnRadiansClockwise(PI/2);
     nSyncedMotors = synchAB;
     nSyncedTurnRatio = 100;
-    motor[motorA] = 5;
+    motor[motorA] = 10; //5
     while(SensorValue(sonar) > 21 - sonarOffset)
       ;
     motor[motorA] = 0;
@@ -420,12 +419,10 @@ void chamberAdjust()
   }
   else if(leftReading < rightReading)
   {
-    nxtDisplayCenteredTextLine(6, "RIGHT");
-    wait1Msec(1000);
     turnRadiansClockwise(-PI/2);
     nSyncedMotors = synchAB;
     nSyncedTurnRatio = 100;
-    motor[motorA] = 5;
+    motor[motorA] = 10; //5
     while( SensorValue(sonar) > 21 - sonarOffset)
       ;
     motor[motorA] = 0;
@@ -437,7 +434,7 @@ void chamberAdjust()
 void beep()
 {
   //beep when done.
-  PlayTone(523,40);	wait10Msec(50);
+  PlayTone(523,40);
 }
 
 
@@ -450,7 +447,7 @@ task main()
 	int currentWaypoint = calculateCurrentWaypoint();
 
 	nxtDisplayCenteredTextLine(3, "WP: %d", currentWaypoint);
-  wait1Msec(3000);
+  //wait1Msec(3000);
 
 	if(currentWaypoint == 1)
 	{
@@ -475,18 +472,18 @@ task main()
 	corridorTurn(currentWaypoint, first);
 	downCorridor(currentWaypoint, first);
   nxtDisplayCenteredTextLine(1, "About To Turn");
-	wait1Msec(3000);
+	//wait1Msec(3000);
 
 	turnToWaypoint(currentWaypoint, first);
 	nxtDisplayCenteredTextLine(1, "Turned.");
-	wait1Msec(3000);
+	//wait1Msec(3000);
 
 	driveToBackWall();
 	chamberAdjust();
 	beep();
   // End First
 
-	wait1Msec(1000);
+	wait1Msec(500);
 
 	// Second
 	currentWaypoint = first;
@@ -500,7 +497,7 @@ task main()
 
 	// End Second
 
-		wait1Msec(1000);
+		wait1Msec(500);
 
 	// Third
 	currentWaypoint = second;
@@ -511,7 +508,8 @@ task main()
 	driveToBackWall();
 	chamberAdjust();
 	beep();
+
 	// End Third
 
-
+	wait1Msec(500);
 }
