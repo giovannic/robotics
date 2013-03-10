@@ -42,16 +42,25 @@ void sonarTo(int degrees)
 
 void turnOut()
 {
-  int boundary = 2;
+  int boundary = 1;
   int originWallDistance = 55;
   const int drive_power = 20;
 
+  int lastVal = 0;
+
+  nMotorEncoder[motorA] = 0;
   nSyncedMotors = synchAB;
   nSyncedTurnRatio = -100;
   motor[motorA] = drive_power;
 
   while(abs(SensorValue[sonar] - originWallDistance) > boundary)
-    ;
+  {
+    if(nMotorEncoder[motorA] / 360 != lastVal)
+    {
+      lastVal = nMotorEncoder[motorA] / 360;
+      boundary++;
+    }
+  }
 
   motor[motorA] = 0;
 }
@@ -97,7 +106,7 @@ void getIntoCorridor()
   nSyncedTurnRatio = 100;
   motor[motorA] = 30;
 
-  while(SensorValue[sonar] > 21 - sonarOffset)
+  while(SensorValue[sonar] > 21 - 2) //-sonarOffset
     ;
 
   motor[motorA] = 0;
@@ -143,7 +152,7 @@ void corridorTurn(int currentWaypoint, int destinationWaypoint)
 
   nxtDisplayCenteredTextLine(4, "from: %d", currentWaypoint);
   nxtDisplayCenteredTextLine(5, "to: %d", destinationWaypoint);
-  wait1Msec(1000);
+  //wait1Msec(1000);
 
   float a = 0;
   switch(currentWaypoint)
@@ -161,12 +170,12 @@ void corridorTurn(int currentWaypoint, int destinationWaypoint)
   turnRadiansClockwise(a);
 }
 
-void follow_outer_wall()
+void follow_outer_wall(int from)
 {
   int balance = 0;
   int reading = 0;
 
-  const int wall_follow_distance = 20;
+  int wall_follow_distance = 20;
   const float damper = 3;
   const int drive_power = 50;
   const int base = 7;
@@ -175,6 +184,11 @@ void follow_outer_wall()
   nMotorPIDSpeedCtrl[motorB] = mtrSpeedReg;
   motor[motorA] = drive_power;
   motor[motorB] = drive_power;
+
+  if(SensorValue[S1] < 18 || SensorValue[S1] > 22)
+  {
+    //wall_follow_distance = SensorValue[S1];
+  }
 
   while(SensorValue[S2] < 30)
   {
@@ -190,32 +204,91 @@ void follow_outer_wall()
         balance = base;
       }
     }
-    motor[motorA] = drive_power - balance;
-    motor[motorB] = drive_power + balance;
+
+    if(from == 3)
+    {
+      motor[motorA] = drive_power - balance;
+      motor[motorB] = drive_power + balance;
+    }
+    else //from == 2
+    {
+      motor[motorA] = drive_power + balance;
+      motor[motorB] = drive_power - balance;
+    }
+
   }
+
+  motor[motorA] = 0;
+  motor[motorB] = 0;
+
+  nxtDisplayCenteredTextLine(1, "End Of Follow");
+  wait1Msec(500);
+
 
 }
 
 void follow_inner_wall()
 {
+  nxtDisplayCenteredTextLine(1, "INNER WALL.");
+  wait1Msec(500);
+
   int balance = 0;
   int reading = 0;
 
-  const int wall_follow_distance = 20;
+  int wall_follow_distance = 20;
   const float damper = 3;
-  const int drive_power = 50;
+  const int drive_power = 30;
   const int base = 7;
 
+  /*nSyncedMotors = synchAB;
+  nMotorEncoder[motorA] = 0;
+  motor[motorA] = 20;
+  while(nMotorEncoder[motorA] < 500)
+  {
+
+
+  }
+
+  motor[motorA] = 0;
+  nxtDisplayCenteredTextLine(1, "Wall Lineup");
+  wait1Msec(1000);*/
+
+  //nMotorEncoder[motorA] = 0;
+  //nMotorEncoder[motorB] = 0;
+
+    nSyncedMotors = synchNone;
   nMotorPIDSpeedCtrl[motorA] = mtrSpeedReg;
   nMotorPIDSpeedCtrl[motorB] = mtrSpeedReg;
+
+    nxtDisplayCenteredTextLine(1, "Aligned.");
+  wait1Msec(500);
+
+    nxtDisplayCenteredTextLine(1, "A: %d B: %d.", nMotorEncoder[motorA], nMotorEncoder[motorB]);
+  wait1Msec(500);
+
+  nMotorEncoder[motorA] = nMotorEncoder[motorA] - nMotorEncoder[motorA];
+  nMotorEncoder[motorB] =   nMotorEncoder[motorB] -   nMotorEncoder[motorB];
+
+      nxtDisplayCenteredTextLine(2, "A: %d B: %d.", nMotorEncoder[motorA], nMotorEncoder[motorB]);
+  wait1Msec(500);
+
   motor[motorA] = drive_power;
   motor[motorB] = drive_power;
 
-  wait1Msec(1000);
+  wall_follow_distance = SensorValue[S1];
 
-  while(SensorValue[S1] > 60)
+  int maStart = nMotorEncoder[motorA];
+  int mbStart = nMotorEncoder[motorB];
+
+  int aDiff = nMotorEncoder[motorA] - maStart;
+  int bDiff = nMotorEncoder[motorB] - mbStart;
+
+  while((0.5*(aDiff + bDiff)) < 5400)
   {
     reading = SensorValue[S1];
+    nxtDisplayCenteredTextLine(4, "A: %d", aDiff);
+    nxtDisplayCenteredTextLine(5, "B: %d", bDiff);
+
     if(reading < 100)
     {
       balance = damper*(SensorValue[S1] - wall_follow_distance);
@@ -227,14 +300,19 @@ void follow_inner_wall()
         balance = base;
       }
     }
-    motor[motorA] = drive_power - balance;
-    motor[motorB] = drive_power + balance;
+    motor[motorA] = drive_power + balance;
+    motor[motorB] = drive_power - balance;
+    aDiff = nMotorEncoder[motorA] - maStart;
+    bDiff = nMotorEncoder[motorB] - mbStart;
   }
 
-  wait1Msec(500);
 
-  motor[motorA] = 0;
+    motor[motorA] = 0;
   motor[motorB] = 0;
+  nxtDisplayCenteredTextLine(1, "End.");
+  wait1Msec(1000);
+
+
 }
 
 void downCorridor(int from, int to)
@@ -246,21 +324,23 @@ void downCorridor(int from, int to)
   //to gauage our depth from the wall infront. We want to stop at 21 from the
   //wall.
 
+  nSyncedMotors = synchNone;
+
   switch(from)
   {
     case 1:
-      sonarTo(-90);
-      //follow_inner_wall();
+      sonarTo(90);
+      follow_inner_wall();
       sonarTo(0);
       break;
     case 2:
       sonarTo(90);
-      //follow_outer_wall();
+      follow_outer_wall(2);
       sonarTo(0);
       break;
     case 3:
       sonarTo(-90);
-      follow_outer_wall();
+      follow_outer_wall(3);
       sonarTo(0);
       break;
   }
@@ -312,13 +392,13 @@ void chamberAdjust()
 {
   //Sonar look left + take reading.
   sonarTo(90);
-  int leftReading = SensorValue(sonar);
-  nxtDisplayCenteredTextLine(1, "LR: %d", leftReading);
+  int rightReading = SensorValue(sonar);
+  nxtDisplayCenteredTextLine(1, "RR: %d", rightReading);
 
   //Sonar look right + take reading.
   sonarTo(-90);
-  int rightReading = SensorValue(sonar);
-  nxtDisplayCenteredTextLine(2, "RR: %d", rightReading);
+  int leftReading = SensorValue(sonar);
+  nxtDisplayCenteredTextLine(2, "LR: %d", leftReading);
 
 
   wait1Msec(1000);
@@ -327,6 +407,8 @@ void chamberAdjust()
   //Adjust the position of the robot so that the left reading = right reading.
   if(leftReading > rightReading)
   {
+    nxtDisplayCenteredTextLine(6, "LEFT");
+    wait1Msec(1000);
     turnRadiansClockwise(PI/2);
     nSyncedMotors = synchAB;
     nSyncedTurnRatio = 100;
@@ -338,6 +420,8 @@ void chamberAdjust()
   }
   else if(leftReading < rightReading)
   {
+    nxtDisplayCenteredTextLine(6, "RIGHT");
+    wait1Msec(1000);
     turnRadiansClockwise(-PI/2);
     nSyncedMotors = synchAB;
     nSyncedTurnRatio = 100;
@@ -353,8 +437,9 @@ void chamberAdjust()
 void beep()
 {
   //beep when done.
-  PlayImmediateTone(780, 100);
+  PlayTone(523,40);	wait10Msec(50);
 }
+
 
 task main()
 {
@@ -362,8 +447,8 @@ task main()
   nMotorEncoder[motorC] = 0;
 
 	getIntoCorridor();
-
 	int currentWaypoint = calculateCurrentWaypoint();
+
 	nxtDisplayCenteredTextLine(3, "WP: %d", currentWaypoint);
   wait1Msec(3000);
 
@@ -386,17 +471,24 @@ task main()
 		third = 3;
 	}
 
-	/* First */
+	// First
 	corridorTurn(currentWaypoint, first);
 	downCorridor(currentWaypoint, first);
+  nxtDisplayCenteredTextLine(1, "About To Turn");
+	wait1Msec(3000);
+
 	turnToWaypoint(currentWaypoint, first);
+	nxtDisplayCenteredTextLine(1, "Turned.");
+	wait1Msec(3000);
+
 	driveToBackWall();
 	chamberAdjust();
 	beep();
+  // End First
 
-	/* End First */
+	wait1Msec(1000);
 
-	/* Second */
+	// Second
 	currentWaypoint = first;
 	getIntoCorridor();
 	corridorTurn(currentWaypoint, second);
@@ -406,9 +498,11 @@ task main()
 	chamberAdjust();
 	beep();
 
-	/* End Second */
+	// End Second
 
-	/* Third */
+		wait1Msec(1000);
+
+	// Third
 	currentWaypoint = second;
 	getIntoCorridor();
 	corridorTurn(currentWaypoint, third);
@@ -417,5 +511,7 @@ task main()
 	driveToBackWall();
 	chamberAdjust();
 	beep();
-	/* End Third */
+	// End Third
+
+
 }
